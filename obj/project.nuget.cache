@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "xLP0sEKV+cso6Cxz/cTYno3icZBztSoDWSKNbsIWg1UkYrI9OmZ1WVczkav3/HS3iLqZL2dYrxaRdrRg6yQDiQ==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Stan\\Repos\\Trader\\Trader.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Stan\\.nuget\\packages\\system.net.http.json\\5.0.0\\system.net.http.json.5.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
