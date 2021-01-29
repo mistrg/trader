@@ -8,13 +8,15 @@ namespace Trader
     class Program
     {
 
-
+        public static MongoDatabase mongoDB = new MongoDatabase();
 
         static async Task Main(string[] args)
         {
 
 
             Console.WriteLine("Trader version 2 starting!");
+
+
             new Coinmate().ListenToOrderbook(CancellationToken.None);
 
             new Binance().ListenToOrderbook(CancellationToken.None);
@@ -25,17 +27,7 @@ namespace Trader
 
 
 
-            var t = new Task(() =>
-            {
-                while (true)
-                {
-                    Thread.Sleep(60000);
-                    Console.WriteLine("Profit since start " + Math.Round(InMemDatabase.Items.Sum(p => p.profit), 2) + " Euro");
-
-
-                }
-            });
-            t.Start();
+         
 
 
             while (true)
@@ -66,21 +58,16 @@ namespace Trader
                         if (0.4 <= profitRate && profitRate < 0.8)
                         {
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%)");
+                            CreateTrade(item, amount, p, profitAbs, profitRate);
                             Console.ResetColor();
-                            p.InPosition = true;
-                            item.InPosition = true;
-                            p.profit = profitAbs;
+
 
                         }
                         else if (0.8 <= profitRate)
                         {
                             Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%)");
+                            CreateTrade(item, amount, p, profitAbs, profitRate);
                             Console.ResetColor();
-                            p.InPosition = true;
-                            item.InPosition = true;
-                            p.profit = profitAbs;
                         }
 
 
@@ -90,5 +77,14 @@ namespace Trader
 
 
         }
+        private static void CreateTrade(DBItem buy, double amount, DBItem sell, double profitAbs, double profitRate)
+        {
+            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {buy.Pair} on {buy.Exch} for {Math.Round(buy.askPrice.Value * amount, 2)} and sell on {sell.Exch} for {Math.Round(sell.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%)");
+            sell.InPosition = true;
+            buy.InPosition = true;
+            mongoDB.WriteTrade(new Trade() { BuyId = buy.Id, SellId = sell.Id,WhenBuySpoted = buy.StartDate, WhenSellSpoted = sell.StartDate,BuyExchange = buy.Exch, SellExchange = sell.Exch, Pair = buy.Pair,UnitAskPrice=buy.askPrice.Value, TotalAskPrice = Math.Round(buy.askPrice.Value * amount, 2), Amount= amount, UnitBidPrice =sell.bidPrice.Value ,  TotalBidPrice = Math.Round(sell.bidPrice.Value * amount, 2),ProfitAbs = profitAbs, ProfitRate = profitRate });
+
+        }
+
     }
 }

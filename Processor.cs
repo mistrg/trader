@@ -6,13 +6,6 @@ public static class Processor
 {
 
 
-    // public Task RunAsync(CancellationToken stoppingToken)
-    // {
-    //     ScheduleTask(async () => biPrice = await Binance.GetBidPriceAsync("BTCEUR"), 1, stoppingToken);
-
-
-
-    // }
 
 
     static void ScheduleTask(Action action, int seconds, CancellationToken token)
