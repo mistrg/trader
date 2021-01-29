@@ -8,36 +8,6 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-public class Result
-{
-    public string channel { get; set; }
-
-
-    [System.Text.Json.Serialization.JsonPropertyName("event")]
-    public string Event { get; set; }
-
-    public Payload payload { get; set; }
-
-
-
-    public class Payload
-    {
-
-        public List<PayAmount> bids { get; set; }
-        public List<PayAmount> asks { get; set; }
-
-
-
-        public class PayAmount
-        {
-            public double price { get; set; }
-            public double amount { get; set; }
-        }
-
-    }
-
-
-}
 
 public class Coinmate
 {
@@ -93,6 +63,7 @@ public class Coinmate
 
     private async Task Receive(ClientWebSocket socket, CancellationToken stoppingToken, string pair)
     {
+        var upair = pair.Replace("_","");
         var buffer = new ArraySegment<byte>(new byte[2048]);
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -110,26 +81,26 @@ public class Coinmate
 
                 ms.Seek(0, SeekOrigin.Begin);
 
-                var res = await JsonSerializer.DeserializeAsync<Result>(ms);
+                var res = await JsonSerializer.DeserializeAsync<CmResult>(ms);
 
                 if (res.Event == "data" && res.payload != null)
                 {
                     foreach (var x in res.payload.asks)
                     {
-                        var dbEntry = Database.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == pair && p.amount == x.amount && p.askPrice == x.price);
+                        var dbEntry = Database.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.askPrice == x.price);
                         if (dbEntry == null)
-                            Database.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = pair, amount = x.amount, askPrice = x.price, StartDate = DateTime.Now });
+                            Database.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price });
                     }
 
 
                     foreach (var x in res.payload.bids)
                     {
-                        var dbEntry = Database.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == pair && p.amount == x.amount && p.bidPrice == x.price);
+                        var dbEntry = Database.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.bidPrice == x.price);
                         if (dbEntry == null)
-                            Database.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = pair, amount = x.amount, bidPrice = x.price, StartDate = DateTime.Now });
+                            Database.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
                     }
 
-                    foreach (var w in Database.Items.Where(p => p.Exch == nameof(Coinmate) && p.Pair == pair))
+                    foreach (var w in Database.Items.Where(p => p.Exch == nameof(Coinmate) && p.Pair == upair))
                     {
                         var askItem = res.payload.asks.SingleOrDefault(p => p.amount == w.amount && p.price == w.askPrice);
 

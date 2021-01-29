@@ -1,13 +1,14 @@
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 public static class Database
 {
-    public static List<DBItem> Items {get;set; }
+    public static ConcurrentBag<DBItem> Items {get;set; }
     
     static Database(){
-        Items =  new List<DBItem>();
+        Items =  new ConcurrentBag<DBItem>();
     } 
 
 
@@ -17,7 +18,13 @@ public static class Database
 
 public class DBItem
 {
+    public double profit {get;set;}
 
+    public DBItem()
+    {
+        StartDate = DateTime.Now;
+    }
+    
     public string Pair {get;set;}
     public DateTime StartDate { get; set; }
     public DateTime? EndDate { get; set; }
