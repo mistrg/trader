@@ -66,7 +66,7 @@ namespace Trader
                         if (0.4 <= profitRate && profitRate < 0.8)
                         {
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%) - A:{item.Id} B: {p.Id} AIP: {item.InPosition} BIP: {p.InPosition}");
+                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%)");
                             Console.ResetColor();
                             p.InPosition = true;
                             item.InPosition = true;
@@ -76,7 +76,7 @@ namespace Trader
                         else if (0.8 <= profitRate)
                         {
                             Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%) - A:{item.Id} B: {p.Id}");
+                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%)");
                             Console.ResetColor();
                             p.InPosition = true;
                             item.InPosition = true;
