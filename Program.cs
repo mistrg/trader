@@ -1,20 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Trader
 {
-
-
     class Program
     {
-
 
 
 
@@ -27,9 +19,9 @@ namespace Trader
 
             new Binance().ListenToOrderbook(CancellationToken.None);
 
-            //  Database.Items.Add(new DBItem(){Exch="Bi", Pair="BTCEUR",askPrice = 25000, amount= 1});
-            //  Database.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 26000, amount= 0.5});
-            //  Database.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 23000, amount= 0.5});
+            //  InMemDatabase.Items.Add(new DBItem(){Exch="Bi", Pair="BTCEUR",askPrice = 25000, amount= 1});
+            //  InMemDatabase.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 26000, amount= 0.5});
+            //  InMemDatabase.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 23000, amount= 0.5});
 
 
 
@@ -38,7 +30,7 @@ namespace Trader
                 while (true)
                 {
                     Thread.Sleep(60000);
-                    Console.WriteLine("Profit since start" + Database.Items.Sum(p=>p.profit));
+                    Console.WriteLine("Profit since start " + Math.Round(InMemDatabase.Items.Sum(p => p.profit), 2) + " Euro");
 
 
                 }
@@ -52,22 +44,29 @@ namespace Trader
 
 
 
-                foreach (var item in Database.Items.Where(p => !p.InPosition))
+                foreach (var item in InMemDatabase.Items.Where(p => !p.InPosition))
                 {
-
-                    var profit = Database.Items.Where(p => p.Exch != item.Exch && p.Pair == item.Pair && (item.askPrice < p.bidPrice) && !p.InPosition);
+                    var profit = InMemDatabase.Items.Where(p => p.Exch != item.Exch && p.Pair == item.Pair && (item.askPrice < p.bidPrice) && !p.InPosition);
                     foreach (var p in profit)
                     {
+                        if (item.InPosition)
+                            continue;
+
+                        if (p.InPosition)
+                            continue;
+
                         var amount = Math.Min(item.amount, p.amount);
 
                         var profitAbs = Math.Round(p.bidPrice.Value * amount - item.askPrice.Value * amount, 2);
                         var profitRate = Math.Round(100 * profitAbs / (p.bidPrice.Value * amount), 2);
 
+                        if (profitAbs < 1)
+                            continue;
 
                         if (0.4 <= profitRate && profitRate < 0.8)
                         {
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%) - duration: {p.Duration}");
+                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%) - A:{item.Id} B: {p.Id} AIP: {item.InPosition} BIP: {p.InPosition}");
                             Console.ResetColor();
                             p.InPosition = true;
                             item.InPosition = true;
@@ -77,12 +76,11 @@ namespace Trader
                         else if (0.8 <= profitRate)
                         {
                             Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%) - duration: {p.Duration}");
+                            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {item.Pair} on {item.Exch} for {Math.Round(item.askPrice.Value * amount, 2)} and sell on {p.Exch} for {Math.Round(p.bidPrice.Value * amount, 2)} and make {profitAbs} profit ({profitRate}%) - A:{item.Id} B: {p.Id}");
                             Console.ResetColor();
                             p.InPosition = true;
                             item.InPosition = true;
                             p.profit = profitAbs;
-
                         }
 
 

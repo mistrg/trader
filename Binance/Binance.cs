@@ -40,9 +40,9 @@ public class Binance
                     {
                         var amount = double.Parse(x[1]);
                         var price = double.Parse(x[0]);
-                        var dbEntry = Database.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.askPrice == price);
+                        var dbEntry = InMemDatabase.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.askPrice == price);
                         if (dbEntry == null)
-                            Database.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price });
+                            InMemDatabase.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price });
                     }
 
 
@@ -51,12 +51,12 @@ public class Binance
                         var amount = double.Parse(x[1]);
                         var price = double.Parse(x[0]);
 
-                        var dbEntry = Database.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.bidPrice == price);
+                        var dbEntry = InMemDatabase.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.bidPrice == price);
                         if (dbEntry == null)
-                            Database.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price });
+                            InMemDatabase.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price });
                     }
 
-                    foreach (var w in Database.Items.Where(p => p.Exch == nameof(Binance) && p.Pair == pair))
+                    foreach (var w in InMemDatabase.Items.Where(p => p.Exch == nameof(Binance) && p.Pair == pair))
                     {
                         var askItem = res.asks.SingleOrDefault(p => p[1] == w.amount.ToString() && p[0] == w.askPrice.ToString());
 

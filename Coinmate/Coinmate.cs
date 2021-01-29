@@ -87,20 +87,20 @@ public class Coinmate
                 {
                     foreach (var x in res.payload.asks)
                     {
-                        var dbEntry = Database.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.askPrice == x.price);
+                        var dbEntry = InMemDatabase.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.askPrice == x.price);
                         if (dbEntry == null)
-                            Database.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price });
+                            InMemDatabase.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price });
                     }
 
 
                     foreach (var x in res.payload.bids)
                     {
-                        var dbEntry = Database.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.bidPrice == x.price);
+                        var dbEntry = InMemDatabase.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.bidPrice == x.price);
                         if (dbEntry == null)
-                            Database.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
+                            InMemDatabase.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
                     }
 
-                    foreach (var w in Database.Items.Where(p => p.Exch == nameof(Coinmate) && p.Pair == upair))
+                    foreach (var w in InMemDatabase.Items.Where(p => p.Exch == nameof(Coinmate) && p.Pair == upair))
                     {
                         var askItem = res.payload.asks.SingleOrDefault(p => p.amount == w.amount && p.price == w.askPrice);
 

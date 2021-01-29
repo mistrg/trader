@@ -3,14 +3,3 @@ C:\Users\Stan\Repos\Trader\obj\Debug\net5.0\Trader.GeneratedMSBuildEditorConfig.
 C:\Users\Stan\Repos\Trader\obj\Debug\net5.0\Trader.AssemblyInfoInputs.cache
 C:\Users\Stan\Repos\Trader\obj\Debug\net5.0\Trader.AssemblyInfo.cs
 C:\Users\Stan\Repos\Trader\obj\Debug\net5.0\Trader.csproj.CoreCompileInputs.cache
-C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\Trader.exe
-C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\Trader.deps.json
-C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\Trader.runtimeconfig.json
-C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\Trader.runtimeconfig.dev.json
-C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\Trader.dll
-C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\ref\Trader.dll
-C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\Trader.pdb
-C:\Users\Stan\Repos\Trader\obj\Debug\net5.0\Trader.dll
-C:\Users\Stan\Repos\Trader\obj\Debug\net5.0\ref\Trader.dll
-C:\Users\Stan\Repos\Trader\obj\Debug\net5.0\Trader.pdb
-C:\Users\Stan\Repos\Trader\obj\Debug\net5.0\Trader.genruntimeconfig.cache
