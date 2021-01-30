@@ -26,9 +26,7 @@ namespace Trader
             //  InMemDatabase.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 23000, amount= 0.5});
 
 
-
          
-
 
             while (true)
             {
