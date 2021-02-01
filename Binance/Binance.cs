@@ -68,7 +68,7 @@ public class Binance
 
                         Thread.Sleep(1000);
                     }
-                    catch()
+                    catch
                     {
                     }
                 }

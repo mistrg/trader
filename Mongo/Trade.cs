@@ -31,7 +31,9 @@ public class Trade
 
 
     public double ProfitRate { get; set; }
-
+    public string BotRunId { get; internal set; }
+    public int BotVersion { get; internal set; }
+    public double ProfitReal { get; internal set; }
 
     public Trade()
     {
