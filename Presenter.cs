@@ -11,7 +11,7 @@ namespace Trader
 
             var biPrice = 0;
 
-            var opened = InMemDatabase.Items.Where(p => p.EndDate == null && !p.InPosition);
+            var opened = InMemDatabase.Instance.Items.Where(p => p.EndDate == null && !p.InPosition);
             var profitable = opened.Where(x => x.askPrice < biPrice);
 
 

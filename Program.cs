@@ -39,9 +39,9 @@ namespace Trader
 
 
 
-                foreach (var item in InMemDatabase.Items.Where(p => !p.InPosition))
+                foreach (var item in InMemDatabase.Instance.Items.Where(p => !p.InPosition))
                 {
-                    var profit = InMemDatabase.Items.Where(p => p.Exch != item.Exch && p.Pair == item.Pair && (item.askPrice < p.bidPrice) && !p.InPosition);
+                    var profit = InMemDatabase.Instance.Items.Where(p => p.Exch != item.Exch && p.Pair == item.Pair && (item.askPrice < p.bidPrice) && !p.InPosition);
                     foreach (var p in profit)
                     {
                         if (item.InPosition || p.InPosition)
@@ -82,7 +82,7 @@ namespace Trader
             Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {buy.Pair} on {buy.Exch} for {Math.Round(buy.askPrice.Value * amount, 2)} and sell on {sell.Exch} for {Math.Round(sell.bidPrice.Value * amount, 2)} and make {profitReal} profit ({profitRate}%)");
             sell.InPosition = true;
             buy.InPosition = true;
-            MongoDatabase.WriteTrade(new Trade()
+            MongoDatabase.Instance.WriteTrade(new Trade()
             {
                 BuyId = buy.Id,
                 SellId = sell.Id,
