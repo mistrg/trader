@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.WebSockets;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -88,6 +87,66 @@ namespace Trader.Coinmate
             }
 
         }
+
+
+        public async Task<CancelOrderResponse> CancelOrderAsync(long orderId)
+        {
+            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+                new KeyValuePair<string, string>("nonce", nonce.ToString()),
+                new KeyValuePair<string, string>("signature", hashHMACHex),
+                new KeyValuePair<string, string>("orderId", orderId.ToString()),
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+
+            var result = await httpClient.PostAsync(baseUri + "cancelOrder", content);
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<CancelOrderResponse>(stream);
+                return res;
+            }
+        }
+        
+        public async Task<BuyInstantResponse> BuyInstant(string currencyPair, double amountToPayInSecondCurrency)
+        {
+            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+                new KeyValuePair<string, string>("nonce", nonce.ToString()),
+                new KeyValuePair<string, string>("signature", hashHMACHex),
+                new KeyValuePair<string, string>("total", amountToPayInSecondCurrency.ToString()),
+                new KeyValuePair<string, string>("currencyPair", currencyPair)
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+
+            var result = await httpClient.PostAsync(baseUri + "buyInstant", content);
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<BuyInstantResponse>(stream);
+                return res;
+            }
+
+        }
+
 
         public async Task BuyAsync()
         {
