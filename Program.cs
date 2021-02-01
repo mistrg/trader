@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Trader.Coinmate;
 
 namespace Trader
 {
@@ -12,17 +13,20 @@ namespace Trader
 
         public static string RunId;
         public static int Version;
-        static void Main(string[] args)
+        static async Task  Main(string[] args)
         {
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 4;
+            Version = 5;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
+            
+            //await new CoinmateLogic().GetOrderHistoryAsync("BTC_EUR");
+            //await new CoinmateLogic().GetOrderByOrderIdAsync(996950149);
+            //return;
 
-
-            new Coinmate().ListenToOrderbook(CancellationToken.None);
+            new CoinmateLogic().ListenToOrderbook(CancellationToken.None);
 
             new Binance().ListenToOrderbook(CancellationToken.None);
 
