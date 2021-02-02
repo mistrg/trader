@@ -1,6 +1,6 @@
 using System;
 
-public class Trade
+public class OrderCandidate
 {
     public Guid BuyId { get; set; }
     public Guid SellId { get; set; }
@@ -34,8 +34,11 @@ public class Trade
     public string BotRunId { get; internal set; }
     public int BotVersion { get; internal set; }
     public double ProfitReal { get; internal set; }
+    public double BuyFee {get;set;}
 
-    public Trade()
+    public double SellFee {get;set;}
+
+    public OrderCandidate()
     {
         WhenCreated = DateTime.Now;
     }

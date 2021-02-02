@@ -1,37 +1,64 @@
 using System;
+using System.Net.Sockets;
+using System.Threading;
 using MongoDB.Driver;
 
 namespace Trader
 {
 
 
- public sealed class MongoDatabase
+    public sealed class MongoDatabase
     {
 
-        public MongoClient client;
-        
+        private int retries = 0;
+        private MongoClient client;
+        private IMongoDatabase db;
+        private IMongoCollection<OrderCandidate> collection;
 
         private static MongoDatabase instance = null;
         private static readonly object padlock = new object();
 
         MongoDatabase()
         {
-            client= new MongoClient(Config.ConnectionString);
+            InitializeDb();
+        }
+
+
+
+        private void InitializeDb()
+        {
+            client = new MongoClient(Config.ConnectionString);
+            db = client.GetDatabase("Trader");
+            collection = db.GetCollection<OrderCandidate>("OrderCandidates");
+
 
         }
 
 
-        public void WriteTrade(Trade obj)
+        public void CreateOrderCandidate(OrderCandidate obj)
         {
-            
-            var db = client.GetDatabase("Trader");
-            // get a collection of MyHelloWorldMongoThings (and create if it doesn't exist)
-            // Using an empty filter so that everything is considered in the filter.
-            var collection = db.GetCollection<Trade>("Trades");
-            // Count the items in the collection prior to insert
-            // Add the entered item to the collection
-            collection.InsertOne(obj);
-            // Count the items in the collection post insert
+            try
+            {
+                // get a collection of MyHelloWorldMongoThings (and create if it doesn't exist)
+                collection.InsertOne(obj);
+
+                retries = 0;
+            }
+            catch (System.Exception ex)
+            {
+
+                retries++;
+                if (retries >= 10)
+                {
+                    throw ex;
+                }
+                Console.WriteLine($"Connection problem. Retrying {retries}/10");
+
+                Thread.Sleep(1000);
+                InitializeDb();
+                CreateOrderCandidate(obj);
+
+            }
 
         }
 
@@ -49,6 +76,7 @@ namespace Trader
                 }
             }
         }
+
     }
 
 }

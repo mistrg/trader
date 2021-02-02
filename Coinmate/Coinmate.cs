@@ -117,7 +117,7 @@ namespace Trader.Coinmate
             }
         }
         
-        public async Task<BuyInstantResponse> BuyInstant(string currencyPair, double amountToPayInSecondCurrency)
+        public async Task<BuyResponse> BuyInstant(string currencyPair, double amountToPayInSecondCurrency)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
 
@@ -141,14 +141,14 @@ namespace Trader.Coinmate
 
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
-                var res = await JsonSerializer.DeserializeAsync<BuyInstantResponse>(stream);
+                var res = await JsonSerializer.DeserializeAsync<BuyResponse>(stream);
                 return res;
             }
 
         }
 
 
-        public async Task BuyAsync()
+        public async Task<BuyResponse> BuyLimitOrderAsync(double amount, double price, string currencyPair)
         {
 
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
@@ -163,14 +163,21 @@ namespace Trader.Coinmate
                 new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
                 new KeyValuePair<string, string>("nonce", nonce.ToString()),
                 new KeyValuePair<string, string>("signature", hashHMACHex),
+                new KeyValuePair<string, string>("amount", amount.ToString()),
+                new KeyValuePair<string, string>("price", price.ToString()),
+                new KeyValuePair<string, string>("currencyPair", currencyPair), 
+                new KeyValuePair<string, string>("immediateOrCancel", 1.ToString()), 
             };
 
             var content = new FormUrlEncodedContent(pairs);
 
-            var result = await httpClient.PostAsync(baseUri + "tradeHistory", content);
+            var result = await httpClient.PostAsync(baseUri + "buyLimit", content);
 
-
-
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<BuyResponse>(stream);
+                return res;
+            }
 
 
 

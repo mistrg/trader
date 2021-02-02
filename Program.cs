@@ -18,11 +18,18 @@ namespace Trader
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 5;
+            Version = 7;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
             
-            //await new CoinmateLogic().GetOrderHistoryAsync("BTC_EUR");
+            //1. BuyInstant  / BuyLimit´=> OrderId
+            //2. GetOrderByOrderIdAsync(OrderId) => status????
+                //3a. Sell on Binanance
+                //3b. Timeout 5sec  status!= 'filled'  ´=> CancelOrder (OrderId)
+
+
+
+            //await new CoinmateLogic().GetOrderByOrderIdAsync("BTC_EUR");
             //await new CoinmateLogic().GetOrderByOrderIdAsync(996950149);
             //return;
 
@@ -35,6 +42,7 @@ namespace Trader
             //  InMemDatabase.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 23000, amount= 0.5});
 
 
+           
 
 
             while (true)
@@ -66,12 +74,12 @@ namespace Trader
                         //profitAbs = profitAbs * (1 - (0.45 / profitRate));
 
 
-                        if (profitReal < 1)
+                        if (profitReal <= 0)
                             continue;
 
 
                         Console.ForegroundColor = ConsoleColor.Green;
-                        CreateTrade(item, amount, p, profitAbs, profitReal, profitRate, buyFee, sellFee);
+                        CreateOrderCandidate(item, amount, p, profitAbs, profitReal, profitRate, buyFee, sellFee);
                         Console.ResetColor();
 
 
@@ -81,12 +89,12 @@ namespace Trader
 
 
         }
-        private static void CreateTrade(DBItem buy, double amount, DBItem sell, double profitAbs, double profitReal, double profitRate, double buyFee, double sellFee)
+        private static void CreateOrderCandidate(DBItem buy, double amount, DBItem sell, double profitAbs, double profitReal, double profitRate, double buyFee, double sellFee)
         {
             Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {buy.Pair} on {buy.Exch} for {Math.Round(buy.askPrice.Value * amount, 2)} and sell on {sell.Exch} for {Math.Round(sell.bidPrice.Value * amount, 2)} and make {profitReal} profit ({profitRate}%)");
             sell.InPosition = true;
             buy.InPosition = true;
-            MongoDatabase.Instance.WriteTrade(new Trade()
+            MongoDatabase.Instance.CreateOrderCandidate(new OrderCandidate()
             {
                 BuyId = buy.Id,
                 SellId = sell.Id,
@@ -103,6 +111,8 @@ namespace Trader
                 ProfitAbs = profitAbs,
                 ProfitReal = profitReal,
                 ProfitRate = profitRate,
+                BuyFee = buyFee, 
+                SellFee = sellFee,
                 BotVersion = Version,
                 BotRunId = RunId
             });
