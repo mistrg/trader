@@ -1,5 +1,6 @@
 using System;
 using System.Net.Sockets;
+using System.Text.Json;
 using System.Threading;
 using MongoDB.Driver;
 
@@ -10,56 +11,40 @@ namespace Trader
     public sealed class MongoDatabase
     {
 
-        private int retries = 0;
         private MongoClient client;
         private IMongoDatabase db;
-        private IMongoCollection<OrderCandidate> collection;
 
         private static MongoDatabase instance = null;
         private static readonly object padlock = new object();
 
         MongoDatabase()
         {
-            InitializeDb();
-        }
-
-
-
-        private void InitializeDb()
-        {
             client = new MongoClient(Config.ConnectionString);
             db = client.GetDatabase("Trader");
-            collection = db.GetCollection<OrderCandidate>("OrderCandidates");
-
 
         }
+
 
 
         public void CreateOrderCandidate(OrderCandidate obj)
         {
-            try
-            {
-                // get a collection of MyHelloWorldMongoThings (and create if it doesn't exist)
-                collection.InsertOne(obj);
 
-                retries = 0;
-            }
-            catch (System.Exception ex)
-            {
+            var collection = db.GetCollection<OrderCandidate>("OrderCandidates");
 
-                retries++;
-                if (retries >= 10)
-                {
-                    throw ex;
-                }
-                Console.WriteLine($"Connection problem. Retrying {retries}/10");
 
-                Thread.Sleep(1000);
-                InitializeDb();
-                CreateOrderCandidate(obj);
+            // get a collection of MyHelloWorldMongoThings (and create if it doesn't exist)
+            collection.InsertOne(obj);
 
-            }
 
+
+
+        }
+
+        public static void Reset()
+        {
+            Instance.db = null;
+            Instance.client = null;
+            instance = null;
         }
 
         public static MongoDatabase Instance
@@ -77,6 +62,23 @@ namespace Trader
             }
         }
 
+        internal void DumpInfo()
+        {
+            var res = JsonSerializer.Serialize(client);
+
+            Console.WriteLine("Client:");
+            Console.WriteLine(res);
+
+             var set = JsonSerializer.Serialize(client.Settings);
+            Console.WriteLine("Settings:");
+
+            Console.WriteLine(set);
+
+             var c = JsonSerializer.Serialize(client.Cluster);
+            Console.WriteLine("Cluster:");
+
+            Console.WriteLine(c);
+        }
     }
 
 }

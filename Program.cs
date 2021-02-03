@@ -9,7 +9,7 @@ namespace Trader
     class Program
     {
 
-
+        public static int dbRetries = 0;
 
         public static string RunId;
         public static int Version;
@@ -94,7 +94,10 @@ namespace Trader
             Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {buy.Pair} on {buy.Exch} for {Math.Round(buy.askPrice.Value * amount, 2)} and sell on {sell.Exch} for {Math.Round(sell.bidPrice.Value * amount, 2)} and make {profitReal} profit ({profitRate}%)");
             sell.InPosition = true;
             buy.InPosition = true;
-            MongoDatabase.Instance.CreateOrderCandidate(new OrderCandidate()
+
+            try
+            {
+                MongoDatabase.Instance.CreateOrderCandidate(new OrderCandidate()
             {
                 BuyId = buy.Id,
                 SellId = sell.Id,
@@ -116,6 +119,21 @@ namespace Trader
                 BotVersion = Version,
                 BotRunId = RunId
             });
+            Program.dbRetries = 0;
+            }
+            catch (System.Exception)
+            {
+                Program.dbRetries++;
+
+                if (Program.dbRetries>10)
+                {
+                    MongoDatabase.Instance.DumpInfo();
+                    throw;
+                }
+                Console.WriteLine($"Retrying Database write {Program.dbRetries}/10");
+                MongoDatabase.Reset();
+            }
+            
 
         }
 
