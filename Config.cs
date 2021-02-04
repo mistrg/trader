@@ -5,6 +5,9 @@ public static class Config
     public static string CoinmatePrivateKey { get { return "E3WMta56vv9ZJw1MH1XIagvUAq105B9LS4fkilAikeY"; } }
     public static string CoinmateClientId { get { return "28298"; } }
 
+    public static bool WriteToMongo { get { return false; } }
+
+    public static bool ProcessTrades { get { return true; } }
 
 
 }

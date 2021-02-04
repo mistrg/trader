@@ -19,8 +19,11 @@ namespace Trader
 
         MongoDatabase()
         {
-            client = new MongoClient(Config.ConnectionString);
-            db = client.GetDatabase("Trader");
+            if (Config.WriteToMongo)
+            {
+                client = new MongoClient(Config.ConnectionString);
+                db = client.GetDatabase("Trader");
+            }
 
         }
 
@@ -28,6 +31,12 @@ namespace Trader
 
         public void CreateOrderCandidate(OrderCandidate obj)
         {
+            if (!Config.WriteToMongo)
+            {
+                Presenter.Warning("CreateOrderCandidate skipped. WriteToMongo is not activated");
+                return;
+            }
+
 
             var collection = db.GetCollection<OrderCandidate>("OrderCandidates");
 
@@ -35,16 +44,16 @@ namespace Trader
             // get a collection of MyHelloWorldMongoThings (and create if it doesn't exist)
             collection.InsertOne(obj);
 
-
-
-
         }
 
         public static void Reset()
         {
-            Instance.db = null;
-            Instance.client = null;
-            instance = null;
+            if (Config.WriteToMongo)
+            {
+                Instance.db = null;
+                Instance.client = null;
+                instance = null;
+            }
         }
 
         public static MongoDatabase Instance
@@ -62,7 +71,7 @@ namespace Trader
             }
         }
 
-     
+
     }
 
 }

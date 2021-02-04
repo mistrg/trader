@@ -18,7 +18,10 @@ namespace Trader.Coinmate
         private static readonly HttpClient httpClient = new HttpClient();
 
         private string uri = "wss://coinmate.io/api/websocket/channel/order-book/";
-        private string baseUri = "https://coinmate.io/api/";
+//        private string baseUri = "https://coinmate.io/api/";
+        private string baseUri = "https://private-fd7e9f-coinmate.apiary-mock.com/api/";
+
+
 
         public List<string> Pairs { get; }
 
@@ -26,6 +29,14 @@ namespace Trader.Coinmate
         public CoinmateLogic()
         {
             Pairs = new List<string>() { "BTC_EUR", "ETH_EUR" };
+        }
+        public string GetLongPair(string shortPair)
+        {
+            if (shortPair.Length == 6)
+            {
+                return shortPair.Insert(3, "_");
+            }
+            return shortPair;
         }
 
         public async Task<Order> GetOrderByOrderIdAsync(long orderId)
@@ -50,10 +61,12 @@ namespace Trader.Coinmate
 
             var result = await httpClient.PostAsync(baseUri + "orderById", content);
 
+            var xtr =await  result.Content.ReadAsStringAsync();
+Console.WriteLine(xtr);
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
                 var res = await JsonSerializer.DeserializeAsync<GetOrderByIdResponse>(stream);
-                return res.data;
+                return res.data[0];
             }
 
         }
@@ -116,7 +129,7 @@ namespace Trader.Coinmate
                 return res;
             }
         }
-        
+
         public async Task<BuyResponse> BuyInstant(string currencyPair, double amountToPayInSecondCurrency)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
@@ -148,9 +161,8 @@ namespace Trader.Coinmate
         }
 
 
-        public async Task<BuyResponse> BuyLimitOrderAsync(string currencyPair, double amount, double price)
+        public async Task<BuyResponse> BuyLimitOrderAsync(string currencyPair, double amount, double price, long clientOrderId)
         {
-            return null;
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
@@ -165,8 +177,10 @@ namespace Trader.Coinmate
                 new KeyValuePair<string, string>("signature", hashHMACHex),
                 new KeyValuePair<string, string>("amount", amount.ToString()),
                 new KeyValuePair<string, string>("price", price.ToString()),
-                new KeyValuePair<string, string>("currencyPair", currencyPair), 
-                new KeyValuePair<string, string>("immediateOrCancel", 1.ToString()), 
+                new KeyValuePair<string, string>("currencyPair", currencyPair),
+                new KeyValuePair<string, string>("immediateOrCancel", 1.ToString()),
+                new KeyValuePair<string, string>("clientOrderId", clientOrderId.ToString()),
+                
             };
 
             var content = new FormUrlEncodedContent(pairs);

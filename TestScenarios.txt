@@ -1,0 +1,8 @@
+Test scenarios
+1) LimitOrder for low price will stay opened and will cancelled after the buyTimeout
+
+
+Coinmate hypothesis
+1) PARTIALLY_FILLED Order state will never happen if  - True / False
+ 
+

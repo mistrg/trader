@@ -20,10 +20,6 @@ namespace Trader
         static async Task Main(string[] args)
         {
 
-
-
-        
-
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
@@ -32,32 +28,20 @@ namespace Trader
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
 
 
-            //await new CoinmateLogic().GetOrderByOrderIdAsync("BTC_EUR");
-            //await new CoinmateLogic().GetOrderByOrderIdAsync(996950149);
-            //return;
+            await TestSuite.TestLowBuyAsync();
+
+            return;
 
             new CoinmateLogic().ListenToOrderbook(CancellationToken.None);
 
             new BinanceLogic().ListenToOrderbook(CancellationToken.None);
 
-            //  InMemDatabase.Items.Add(new DBItem(){Exch="Bi", Pair="BTCEUR",askPrice = 25000, amount= 1});
-            //  InMemDatabase.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 26000, amount= 0.5});
-            //  InMemDatabase.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 23000, amount= 0.5});
-
-
-
-
-
             while (true)
             {
-
                 Thread.Sleep(300);
 
                 if (Console.KeyAvailable)
                 {
-
-                    //handle key presses
-
                     if (Console.ReadKey(true).Key == ConsoleKey.B)
                     {
                         await CandidateSelectionAsync();
@@ -86,12 +70,8 @@ namespace Trader
 
                         var profitRate = Math.Round(100 * profitReal / (p.bidPrice.Value * amount), 2);
 
-                        //profitAbs = profitAbs * (1 - (0.45 / profitRate));
-
-
                         if (profitReal <= 0)
                             continue;
-
 
                         CreateOrderCandidate(item, amount, p, profitAbs, profitReal, profitRate, buyFee, sellFee);
 
@@ -131,11 +111,6 @@ namespace Trader
                 Console.WriteLine($"OrderCandidate: {offerCandidateId} not found. Continue...");
 
             }
-
-
-
-
-
         }
 
         private static void PrintOrderCandidate(OrderCandidate oc)
@@ -175,10 +150,6 @@ namespace Trader
 
             PrintOrderCandidate(oc);
 
-
-
-
-            return;
             try
             {
                 MongoDatabase.Instance.CreateOrderCandidate(oc);

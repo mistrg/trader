@@ -18,6 +18,15 @@ namespace Trader
             Console.WriteLine(error);
             Console.ResetColor();
         }
+
+         public static void Warning(string warning)
+        {
+           
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine(warning);
+            Console.ResetColor();
+        }
+        
         public static void ListResults()
         {
 
@@ -69,5 +78,7 @@ namespace Trader
                 Console.ResetColor();
             }
         }
+
+       
     }
 }
