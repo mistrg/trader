@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Trader.Binance;
 using Trader.Coinmate;
 
 namespace Trader
@@ -11,22 +13,23 @@ namespace Trader
 
         public static int dbRetries = 0;
 
+
+
         public static string RunId;
         public static int Version;
-        static async Task  Main(string[] args)
+        static async Task Main(string[] args)
         {
+
+
+
+        
+
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 7;
+            Version = 8;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
-            
-            //1. BuyInstant  / BuyLimit´=> OrderId
-            //2. GetOrderByOrderIdAsync(OrderId) => status????
-                //3a. Sell on Binanance
-                //3b. Timeout 5sec  status!= 'filled'  ´=> CancelOrder (OrderId)
-
 
 
             //await new CoinmateLogic().GetOrderByOrderIdAsync("BTC_EUR");
@@ -35,19 +38,31 @@ namespace Trader
 
             new CoinmateLogic().ListenToOrderbook(CancellationToken.None);
 
-            new Binance().ListenToOrderbook(CancellationToken.None);
+            new BinanceLogic().ListenToOrderbook(CancellationToken.None);
 
             //  InMemDatabase.Items.Add(new DBItem(){Exch="Bi", Pair="BTCEUR",askPrice = 25000, amount= 1});
             //  InMemDatabase.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 26000, amount= 0.5});
             //  InMemDatabase.Items.Add(new DBItem(){Exch="Cm", Pair="BTCEUR",bidPrice = 23000, amount= 0.5});
 
 
-           
+
 
 
             while (true)
             {
-                Thread.Sleep(1000);
+
+                Thread.Sleep(300);
+
+                if (Console.KeyAvailable)
+                {
+
+                    //handle key presses
+
+                    if (Console.ReadKey(true).Key == ConsoleKey.B)
+                    {
+                        await CandidateSelectionAsync();
+                    }
+                }
 
 
 
@@ -78,9 +93,7 @@ namespace Trader
                             continue;
 
 
-                        Console.ForegroundColor = ConsoleColor.Green;
                         CreateOrderCandidate(item, amount, p, profitAbs, profitReal, profitRate, buyFee, sellFee);
-                        Console.ResetColor();
 
 
                     }
@@ -89,15 +102,53 @@ namespace Trader
 
 
         }
+
+
+        public static async Task CandidateSelectionAsync()
+        {
+            Console.WriteLine($"Please enter OCID:");
+            var offerCandidateId = long.Parse(Console.ReadLine());
+            OrderCandidate orderCandidate = null;
+            if (InMemDatabase.Instance.OrderCandidates.TryGetValue(offerCandidateId, out orderCandidate) && orderCandidate != null)
+            {
+                Console.WriteLine($"Do you wish to process following order? ");
+                Console.ForegroundColor = ConsoleColor.Blue;
+                PrintOrderCandidate(orderCandidate);
+                Console.ResetColor();
+
+                Console.WriteLine($"(y = yes / n = no) ");
+
+
+                var process = Console.ReadLine();
+                if (process == "y")
+                    await Processor.ProcessOrderAsync(orderCandidate);
+                else
+                    Console.WriteLine("Process cancelled. Continue...");
+
+            }
+            else
+            {
+                Console.WriteLine($"OrderCandidate: {offerCandidateId} not found. Continue...");
+
+            }
+
+
+
+
+
+        }
+
+        private static void PrintOrderCandidate(OrderCandidate oc)
+        {
+            Console.WriteLine($"{oc.WhenCreated.ToString("dd.MM.yyyy HH:mm:ss")} OCID: {oc.Id} Buy {oc.Pair} on {oc.BuyExchange} for {oc.TotalAskPrice} and sell on {oc.SellExchange} for {oc.TotalBidPrice} and make {oc.ProfitReal} profit ({oc.ProfitRate}%)");
+
+        }
         private static void CreateOrderCandidate(DBItem buy, double amount, DBItem sell, double profitAbs, double profitReal, double profitRate, double buyFee, double sellFee)
         {
-            Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Buy {buy.Pair} on {buy.Exch} for {Math.Round(buy.askPrice.Value * amount, 2)} and sell on {sell.Exch} for {Math.Round(sell.bidPrice.Value * amount, 2)} and make {profitReal} profit ({profitRate}%)");
             sell.InPosition = true;
             buy.InPosition = true;
 
-            try
-            {
-                MongoDatabase.Instance.CreateOrderCandidate(new OrderCandidate()
+            var oc = new OrderCandidate()
             {
                 BuyId = buy.Id,
                 SellId = sell.Id,
@@ -114,26 +165,41 @@ namespace Trader
                 ProfitAbs = profitAbs,
                 ProfitReal = profitReal,
                 ProfitRate = profitRate,
-                BuyFee = buyFee, 
+                BuyFee = buyFee,
                 SellFee = sellFee,
                 BotVersion = Version,
                 BotRunId = RunId
-            });
-            Program.dbRetries = 0;
+            };
+            InMemDatabase.Instance.OrderCandidates.Add(oc.Id, oc);
+
+
+            PrintOrderCandidate(oc);
+
+
+
+
+            return;
+            try
+            {
+                MongoDatabase.Instance.CreateOrderCandidate(oc);
+                Program.dbRetries = 0;
             }
             catch (System.Exception)
             {
+                Random r = new Random();
+                int rInt = r.Next(1000, 60 * 1000);
+                Thread.Sleep(rInt);
+
                 Program.dbRetries++;
 
-                if (Program.dbRetries>10)
+                if (Program.dbRetries > 20)
                 {
-                    MongoDatabase.Instance.DumpInfo();
                     throw;
                 }
-                Console.WriteLine($"Retrying Database write {Program.dbRetries}/10");
+                Console.WriteLine($"Retrying Database write {Program.dbRetries}/20");
                 MongoDatabase.Reset();
             }
-            
+
 
         }
 

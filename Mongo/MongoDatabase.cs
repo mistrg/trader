@@ -62,23 +62,7 @@ namespace Trader
             }
         }
 
-        internal void DumpInfo()
-        {
-            var res = JsonSerializer.Serialize(client);
-
-            Console.WriteLine("Client:");
-            Console.WriteLine(res);
-
-             var set = JsonSerializer.Serialize(client.Settings);
-            Console.WriteLine("Settings:");
-
-            Console.WriteLine(set);
-
-             var c = JsonSerializer.Serialize(client.Cluster);
-            Console.WriteLine("Cluster:");
-
-            Console.WriteLine(c);
-        }
+     
     }
 
 }

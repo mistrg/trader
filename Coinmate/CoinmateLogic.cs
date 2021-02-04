@@ -148,9 +148,9 @@ namespace Trader.Coinmate
         }
 
 
-        public async Task<BuyResponse> BuyLimitOrderAsync(double amount, double price, string currencyPair)
+        public async Task<BuyResponse> BuyLimitOrderAsync(string currencyPair, double amount, double price)
         {
-
+            return null;
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;

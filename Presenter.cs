@@ -6,6 +6,18 @@ namespace Trader
     public static class Presenter
     {
 
+        public static void ShowPanic(string error)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkMagenta;
+            Console.WriteLine(error);
+            Console.ResetColor();
+        }
+        public static void ShowError(string error)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine(error);
+            Console.ResetColor();
+        }
         public static void ListResults()
         {
 

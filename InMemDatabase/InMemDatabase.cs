@@ -17,6 +17,7 @@ namespace Trader
         InMemDatabase()
         {
             Items = new ConcurrentBag<DBItem>();
+            OrderCandidates = new Dictionary<long, OrderCandidate>();
 
         }
 
@@ -34,6 +35,8 @@ namespace Trader
                 }
             }
         }
+
+        public Dictionary<long, OrderCandidate> OrderCandidates { get; internal set; }
     }
 
 

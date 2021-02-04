@@ -2,6 +2,7 @@ using System;
 
 public class OrderCandidate
 {
+    public long Id {get;}
     public Guid BuyId { get; set; }
     public Guid SellId { get; set; }
 
@@ -41,6 +42,7 @@ public class OrderCandidate
     public OrderCandidate()
     {
         WhenCreated = DateTime.Now;
+        Id = DateTime.UtcNow.Ticks;
     }
 
 }
