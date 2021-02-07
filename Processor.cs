@@ -26,9 +26,9 @@ public static class Processor
         var sms = new SmsLogic();
 
 
-        var isSuccess = await BuyLimitOrderAsync(orderCandidate);
+        var buyResult = await BuyLimitOrderAsync(orderCandidate);
 
-        if (!isSuccess)
+        if (!buyResult.Item1)
         {
             await sms.SendSmsAsync("BuyLimitOrderAsync failed. Check OrderCandidate " + orderCandidate.Id);
             return;
@@ -36,25 +36,27 @@ public static class Processor
         }
 
 
-        isSuccess = await SellMarketAsync(orderCandidate);
+        var sellResult = await SellMarketAsync(orderCandidate);
 
-        if (!isSuccess)
+        if (!sellResult.Item1)
         {
             await sms.SendSmsAsync("SellMarketAsync failed. Check OrderCandidate " + orderCandidate.Id);
             return;
         }
 
-        await sms.SendSmsAsync($"Arbitrage success.OCID {orderCandidate.Id} net profit {orderCandidate.ProfitNet}");
+        var successMessage = $"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Arbitrage success. OCID {orderCandidate.Id} estNetProfit {orderCandidate.EstProfitNet} realNetProfit {sellResult.Item2.priceNum -  buyResult.Item2.price}";
+        Presenter.ShowSuccess(successMessage);
+        await sms.SendSmsAsync(successMessage);
 
     }
 
-    public static async Task<bool> BuyLimitOrderAsync(OrderCandidate orderCandidate)
+    public static async Task<Tuple<bool, Order>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
     {
 
         if (!Config.ProcessTrades)
         {
             Presenter.Warning("BuyLimitOrderAsync skipped. ProcessTrades is not activated");
-            return true;
+            return new Tuple<bool, Order>(true, null);
         }
 
         Presenter.PrintOrderCandidate(orderCandidate);
@@ -71,7 +73,7 @@ public static class Processor
             if (!coinmateLogic.Pairs.Any(p => p == pair))
             {
                 Presenter.ShowError("Unsupported currency pair. Process cancel...");
-                return false;
+                return new Tuple<bool, Order>(false, null);
             }
 
             buyResponse = await coinmateLogic.BuyLimitOrderAsync(pair, orderCandidate.Amount, orderCandidate.UnitAskPrice, orderCandidate.Id);
@@ -79,49 +81,57 @@ public static class Processor
         catch (System.Exception ex)
         {
             Presenter.ShowPanic($"Buylimit failed. {ex}. Process cancel...");
-            return false;
+            return new Tuple<bool, Order>(false, null);
         }
 
         if (buyResponse == null)
         {
             Presenter.ShowError($"Buyresponse is empty. Process cancel...");
-            return false;
+            return new Tuple<bool, Order>(false, null);
         }
 
         if (buyResponse.error)
         {
             Presenter.ShowError($"Buylimit failed. {buyResponse.errorMessage}. Process cancel...");
-            return false;
+            return new Tuple<bool, Order>(false, null);
         }
 
         if (buyResponse.data == null || buyResponse.data <= 0)
         {
             Presenter.ShowPanic($"Buylimit failed. Invalid order ID. Process cancel...");
-            return false;
+            return new Tuple<bool, Order>(false, null);
         }
 
         Console.WriteLine($"Waiting for buy confirmation");
 
         Order result = null;
 
-        bool buySuccess = System.Threading.SpinWait.SpinUntil(() =>
+        bool opComplete = System.Threading.SpinWait.SpinUntil(() =>
         {
             try
             {
+                Thread.Sleep(200);
                 result = coinmateLogic.GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
             }
             catch (Exception ex)
             {
                 Presenter.ShowError($"GetOrderByOrderIdAsync failed. {ex} Retrying...");
             }
-            return result != null && (result.status == "FILLED" || result.status == "PARTIALLY_FILLED");
+            return result != null && (result.status == "FILLED" || result.status == "PARTIALLY_FILLED" || result.status == "CANCELLED");
 
 
         }, TimeSpan.FromMilliseconds(buyTimeoutInMs));
 
+        var buySuccess = result.status != null && (result.status == "FILLED" || result.status == "PARTIALLY_FILLED");
         if (!buySuccess)
         {
             Console.WriteLine($"Buylimit order was sent but could not be confirmed in time. Current state is {result?.status} Trying to cancel the order.");
+
+            if (result?.status == "CANCELLED")
+            {
+                Console.WriteLine("Order was already cancelled successfully.Process cancel...");
+                return new Tuple<bool, Order>(false, result);
+            }
 
             CancelOrderResponse buyCancelResult = null;
             try
@@ -137,11 +147,13 @@ public static class Processor
                 if (val == "y")
                 {
                     Console.WriteLine("Ok. Going to sell...");
-                    return true;
+                    return new Tuple<bool, Order>(true, result);
+
                 }
                 Console.WriteLine("Ok. Process cancel...");
 
-                return false;
+                return new Tuple<bool, Order>(false, result);
+
             }
 
             if (buyCancelResult != null && buyCancelResult.data)
@@ -154,12 +166,14 @@ public static class Processor
                 if (val == "y")
                 {
                     Console.WriteLine("Ok. Going to sell...");
-                    return true;
+                    return new Tuple<bool, Order>(true, result);
+
                 }
                 Console.WriteLine("Ok. Process cancel...");
             }
 
-            return false;
+            return new Tuple<bool, Order>(false, result);
+
         }
 
         if (result.status == "PARTIALLY_FILLED")
@@ -167,28 +181,31 @@ public static class Processor
             if (result.remainingAmount is null)
             {
                 Presenter.ShowPanic($"Partial buy was done but remaing amount is not set. Don't know how much to sell. Please check the coinmate platform manually...Process cancel...");
-                return false;
+                return new Tuple<bool, Order>(false, result);
+
             }
             orderCandidate.Amount -= result.remainingAmount.Value;
-            Console.WriteLine($"Successful partial done.  Amount was updated to {orderCandidate.Amount}.  {orderCandidate.Pair}  on {orderCandidate.BuyExchange}. Order type {result.orderTradeType} ");
+            Console.WriteLine($"Successful partial {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {result.price}/{orderCandidate.TotalAskPrice} on {orderCandidate.BuyExchange} status {result.status}. SellAmount updated.");
+
 
         }
         else
         {
-            Console.WriteLine($"Successfuly bought {orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} on {orderCandidate.BuyExchange} status {result.status} Order type {result.orderTradeType} ");
+            Console.WriteLine($"Successful {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {result.price}/{orderCandidate.TotalAskPrice} on {orderCandidate.BuyExchange} status {result.status}");
         }
 
-        return true;
+        return new Tuple<bool, Order>(true, result);
+
     }
-    public static async Task<bool> SellMarketAsync(OrderCandidate orderCandidate)
+    public static async Task<Tuple<bool, OrderResponse>> SellMarketAsync(OrderCandidate orderCandidate)
     {
 
         if (!Config.ProcessTrades)
         {
             Presenter.Warning("BuyLimitOrderAsync skipped. ProcessTrades is not activated");
-            return true;
+            return new Tuple<bool, OrderResponse>(true, null);
         }
-
+        Console.WriteLine("Let's sell");
         Presenter.PrintOrderCandidate(orderCandidate);
 
 
@@ -203,26 +220,23 @@ public static class Processor
         catch (System.Exception ex)
         {
             Presenter.ShowPanic($"SellMarketAsync failed. {ex}. Please check binance manually.");
-            return false;
+            return new Tuple<bool, OrderResponse>(false, null);
+
         }
-
-
-
-
 
         if (result == null)
             Presenter.ShowPanic($"SellMarketAsync failed. Result is null.");
 
-        Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")}  OrderId {result.orderId} OCID {result.clientOrderId} {result.side} {result.type} price: {result.price} symbol: {result.symbol} Qty: {result.executedQty}/{result.origQty} cumQty: {result.cummulativeQuoteQty}");
+        Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} {result.side} {result.type} OrderId {result.orderId} OCID {result.clientOrderId}  price: {result.price} symbol: {result.symbol} Qty: {result.executedQty}/{result.origQty} cumQty: {result.cummulativeQuoteQty}");
 
         if (result.status == "FILLED")
             Console.WriteLine("Successfully sold");
         else
-            Console.WriteLine("Check line above for problems");
+        {
+            Presenter.ShowPanic("Check line above for problems");
+        }
 
-
-        return result.status == "FILLED";
-
+        return new Tuple<bool, OrderResponse>(result.status == "FILLED", result);
     }
 }
 

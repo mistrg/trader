@@ -8,8 +8,7 @@ namespace Trader
 
        public static void PrintOrderCandidate(OrderCandidate oc)
         {
-            Console.WriteLine($"{oc.WhenCreated.ToString("dd.MM.yyyy HH:mm:ss")} OCID: {oc.Id} Buy {oc.Amount} {oc.Pair.Substring(0, 3)} on {oc.BuyExchange} for {oc.TotalAskPrice} {oc.Pair.Substring(3, 3)} and sell on {oc.SellExchange} for {oc.TotalBidPrice} {oc.Pair.Substring(3, 3)} and make {oc.ProfitNet} {oc.Pair.Substring(3, 3)} net profit ({oc.ProfitNetRate}%) sellfee {oc.SellFee}");
-
+            Console.WriteLine($"{oc.WhenCreated.ToString("dd.MM.yyyy HH:mm:ss")} OCID: {oc.Id} Buy {oc.Amount} {oc.Pair.Substring(0, 3)} on {oc.BuyExchange} for {oc.TotalAskPrice} {oc.Pair.Substring(3, 3)} and sell on {oc.SellExchange} for {oc.TotalBidPrice} {oc.Pair.Substring(3, 3)} and make estNetProfit {oc.EstProfitNet} {oc.Pair.Substring(3, 3)} estProfitNetRate ({oc.EstProfitNetRate}%) estSellfee {oc.EstSellFee}");
         }
         public static void ShowPanic(string error)
         {
@@ -31,8 +30,12 @@ namespace Trader
             Console.WriteLine(warning);
             Console.ResetColor();
         }
-        
 
-       
+        internal static void ShowSuccess(string successMessage)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine(successMessage);
+            Console.ResetColor();
+        }
     }
 }

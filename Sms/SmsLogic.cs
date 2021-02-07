@@ -15,6 +15,7 @@ namespace Trader.Sms
 
         public async Task SendSmsAsync(string text)
         {
+
             if (!Config.Sms77Active)
                 return;
 
@@ -33,18 +34,26 @@ namespace Trader.Sms
 
             var content = new FormUrlEncodedContent(pairs);
 
-            var result = await httpClient.PostAsync(baseUri + "sms", content);
-
-            if (!result.IsSuccessStatusCode)
+            try
             {
-                var str = await result.Content.ReadAsStringAsync();
-                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+                var result = await httpClient.PostAsync(baseUri + "sms", content);
+
+                if (!result.IsSuccessStatusCode)
+                {
+                    var str = await result.Content.ReadAsStringAsync();
+                    Presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+                }
+
+
+                var errorCode = await result.Content.ReadAsStringAsync();
+                if (errorCode != "100")
+                    Presenter.ShowError($"SMS77 failed with error code {errorCode}");
+
             }
-
-
-            var errorCode = await result.Content.ReadAsStringAsync();
-            if (errorCode != "100")
-                Presenter.ShowError($"SMS77 failed with error code {errorCode}");
+            catch (System.Exception ex)
+            {
+                Presenter.ShowError($"SMS77 failed with error message {ex}");
+            }
 
 
         }

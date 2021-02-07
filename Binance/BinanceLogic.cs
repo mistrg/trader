@@ -17,7 +17,7 @@ namespace Trader.Binance
 
         public BinanceLogic()
         {
-            Pairs = new List<string>() { "BTCEUR", "ETHEUR" };
+            Pairs = new List<string>() { "BTCEUR" };
         }
         static string baseUri = "https://api.binance.com/api/v3/";
         private static readonly HttpClient httpClient = new HttpClient();

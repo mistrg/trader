@@ -30,6 +30,7 @@ namespace Trader
 
             //await TestSuite.TestLowSellAsync();
             // await TestSuite.TestLowBuyAsync();
+            // return;
 
             new CoinmateLogic().ListenToOrderbook(CancellationToken.None);
 
@@ -59,20 +60,25 @@ namespace Trader
 
                         var minimalAmount = Math.Min(bookItem1.amount, bookItem2.amount);
 
-                        var profitGross = Math.Round(bookItem2.bidPrice.Value * minimalAmount - bookItem1.askPrice.Value * minimalAmount, 2);
+                        var estProfitGross = Math.Round(bookItem2.bidPrice.Value * minimalAmount - bookItem1.askPrice.Value * minimalAmount, 2);
 
-                        var buyFee = 0;
-                        var sellFee = Math.Round(bookItem2.bidPrice.Value * minimalAmount * 0.001, 2);
+                        var estBuyFee = 0;
+                        var estSellFee = Math.Round(bookItem2.bidPrice.Value * minimalAmount * 0.001, 2);
 
 
-                        var profitNet = Math.Round(profitGross - buyFee - sellFee, 2);
+                        var estProfitNet = Math.Round(estProfitGross - estBuyFee - estSellFee, 2);
 
-                        var profitNetRate = Math.Round(100 * profitNet / (bookItem2.bidPrice.Value * minimalAmount), 2);
+                        var profitNetRate = Math.Round(100 * estProfitNet / (bookItem2.bidPrice.Value * minimalAmount), 2);
 
-                        if (profitNet <= 0)
+                        if (profitNetRate <= 0)
                             continue;
 
-                        CreateOrderCandidate(bookItem1, bookItem2, minimalAmount, profitGross, profitNet, profitNetRate, buyFee, sellFee);
+                        var dbt = new Task(() =>
+                        {
+                            CreateOrderCandidate(bookItem1, bookItem2, minimalAmount, estProfitGross, estProfitNet, profitNetRate, estBuyFee, estSellFee);
+                        });
+                        dbt.Start();
+
                     }
                 }
             }
@@ -84,7 +90,16 @@ namespace Trader
         public static async Task CandidateSelectionAsync()
         {
             Console.WriteLine($"Please enter OCID:");
-            var offerCandidateId = long.Parse(Console.ReadLine());
+            long offerCandidateId  = 0;
+            try
+            {
+                offerCandidateId = long.Parse(Console.ReadLine());
+
+            }
+            catch (System.Exception)
+            {
+                return;
+            }
             OrderCandidate orderCandidate = null;
             if (InMemDatabase.Instance.OrderCandidates.TryGetValue(offerCandidateId, out orderCandidate) && orderCandidate != null)
             {
@@ -108,7 +123,7 @@ namespace Trader
         }
 
 
-        private static void CreateOrderCandidate(DBItem buy, DBItem sell, double minimalAmount, double profitGross, double profitNet, double profitNetRate, double buyFee, double sellFee)
+        private static void CreateOrderCandidate(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
         {
             sell.InPosition = true;
             buy.InPosition = true;
@@ -127,11 +142,11 @@ namespace Trader
                 Amount = minimalAmount,
                 UnitBidPrice = sell.bidPrice.Value,
                 TotalBidPrice = Math.Round(sell.bidPrice.Value * minimalAmount, 2),
-                ProfitGross = profitGross,
-                ProfitNet = profitNet,
-                ProfitNetRate = profitNetRate,
-                BuyFee = buyFee,
-                SellFee = sellFee,
+                EstProfitGross = estProfitGross,
+                EstProfitNet = estProfitNet,
+                EstProfitNetRate = estProfitNetRate,
+                EstBuyFee = estBuyFee,
+                EstSellFee = estSellFee,
                 BotVersion = Version,
                 BotRunId = RunId
             };

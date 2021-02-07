@@ -28,7 +28,7 @@ namespace Trader.Coinmate
 
         public CoinmateLogic()
         {
-            Pairs = new List<string>() { "BTC_EUR", "ETH_EUR" };
+            Pairs = new List<string>() { "BTC_EUR" };
         }
         public string GetLongPair(string shortPair)
         {

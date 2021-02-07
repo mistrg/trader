@@ -10,20 +10,15 @@ Work Log
 3.2.2021 Bot problems with database are fixed. Bot is running nonstop
 4.2.2021 UI for buying inside console. Processer logic for process of buying 
 5.2.2021 Processer logic for process of buying. First test of buy functionality on coinmate [Version8]
-6.2.2021 Properties renamed to use gros and net for numbers, more transparent texts [Version9]
-
+6.2.2021 Properties renamed to use gros and net for numbers, more transparent texts, integrate selling on binance [Version9]
+7.2.2021 Implement sms reporting, debug the buy process to solve resultstate cancelled problem, 
 
 TODO
-implement sms reporting
+introduce estimate and real keywords
 write trade to database
 add logging framework to protocol all htttp requests
-integrate selling on binance
-
-check why is buy result null
-
 verify that we have enough crypto on sell exchanges
 verify that we have enough euro on buy exchange
 
 
-do we want to sell market? it's risk but we maybe have to
 

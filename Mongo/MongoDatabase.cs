@@ -36,12 +36,8 @@ namespace Trader
                 Presenter.Warning("CreateOrderCandidate skipped. WriteToMongo is not activated");
                 return;
             }
-
-
             var collection = db.GetCollection<OrderCandidate>("OrderCandidates");
 
-
-            // get a collection of MyHelloWorldMongoThings (and create if it doesn't exist)
             collection.InsertOne(obj);
 
         }

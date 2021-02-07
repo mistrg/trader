@@ -18,6 +18,12 @@ namespace Trader.Binance
         public string side { get; set; }
 
 
+        public double priceNum {get { return string.IsNullOrWhiteSpace(price) ? 0 : double.Parse(price);}}
+        public double origQtyNum { get { return string.IsNullOrWhiteSpace(origQty) ? 0 : double.Parse(origQty); } }
+        public double executedQtyNum { get { return string.IsNullOrWhiteSpace(executedQty) ? 0 : double.Parse(executedQty); } }
+        public double cummulativeQuoteQtyNum { get { return string.IsNullOrWhiteSpace(cummulativeQuoteQty) ? 0 : double.Parse(cummulativeQuoteQty); } }
+
+
     }
-    
+
 }
