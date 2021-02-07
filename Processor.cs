@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Trader;
 using Trader.Binance;
 using Trader.Coinmate;
+using Trader.Sms;
 
 public static class Processor
 {
@@ -22,11 +23,28 @@ public static class Processor
             return;
         }
 
+        var sms = new SmsLogic();
+
 
         var isSuccess = await BuyLimitOrderAsync(orderCandidate);
 
-        if (isSuccess)
-            await SellMarketAsync(orderCandidate);
+        if (!isSuccess)
+        {
+            await sms.SendSmsAsync("BuyLimitOrderAsync failed. Check OrderCandidate " + orderCandidate.Id);
+            return;
+
+        }
+
+
+        isSuccess = await SellMarketAsync(orderCandidate);
+
+        if (!isSuccess)
+        {
+            await sms.SendSmsAsync("SellMarketAsync failed. Check OrderCandidate " + orderCandidate.Id);
+            return;
+        }
+
+        await sms.SendSmsAsync($"Arbitrage success.OCID {orderCandidate.Id} net profit {orderCandidate.ProfitNet}");
 
     }
 
@@ -189,20 +207,7 @@ public static class Processor
         }
 
 
-        // bool buySuccess = System.Threading.SpinWait.SpinUntil(() =>
-        // {
-        //     try
-        //     {
-        //         result = coinmateLogic.GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Presenter.ShowError($"GetOrderByOrderIdAsync failed. {ex} Retrying...");
-        //     }
-        //     return result != null && (result.status == "FILLED" || result.status == "PARTIALLY_FILLED");
 
-
-        // }, TimeSpan.FromMilliseconds(buyTimeoutInMs));
 
 
         if (result == null)

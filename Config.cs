@@ -10,6 +10,12 @@ public static class Config
     public static string BinanceApiKey { get { return "PhWiIMtXBRVucLWpsmz1TSffWN1jgpvE9TD3T7cLwPtgG1MdmLkqkx1GBr7EdzxW"; } }
     public static string BinanceSecretKey { get { return "wkLjUrU6Jfa9XbZ8kxysr7xajMq67fySuxysIjxYnhpoYi46LtUIrTkfnZC052Y1"; } }
     
+
+
+    public static bool Sms77Active { get { return true; } }
+    public static string Sms77ApiKey { get { return "S5beBRtdCuappyUEieR2GAKfRLl3ae0aik7rrcMYP3xqehS5wCRuwDoo0pRVbDKw"; } }
+    public static string Sms77SendTo { get { return "00420728084581"; } }
+    
     
 
     public static bool WriteToMongo { get { return false; } }
