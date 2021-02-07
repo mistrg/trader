@@ -1,0 +1,29 @@
+
+Work Log
+
+27.1.2021 Initial Pilot - polling prices from Coinmate and Binance 4
+28.1.2021 Rewrote bot to support streams. Connection to order book on Coinmate, Computing profitability  8
+29.1.2021 Further refactoring to support multiple exchanges and currencies. Integration of mongodb and reporting on atlas, bug fixing 9
+30.1.2021 Better versioning of the app, deployment to the server, trying to solve connection problems
+1.2.2021 Implementation of get orders, transactions, buy and cancel on binance. 
+2.2.2021 Looking for different solution to database problems, Implementation of buy limit
+3.2.2021 Bot problems with database are fixed. Bot is running nonstop
+4.2.2021 UI for buying inside console. Processer logic for process of buying 
+5.2.2021 Processer logic for process of buying. First test of buy functionality on coinmate [Version8]
+6.2.2021 Properties renamed to use gros and net for numbers, more transparent texts [Version9]
+
+
+TODO
+implement sms reporting
+write trade to database
+add logging framework to protocol all htttp requests
+integrate selling on binance
+
+check why is buy result null
+
+verify that we have enough crypto on sell exchanges
+verify that we have enough euro on buy exchange
+
+
+do we want to sell market? it's risk but we maybe have to
+

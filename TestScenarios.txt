@@ -3,6 +3,15 @@ Test scenarios
 
 
 Coinmate hypothesis
-1) PARTIALLY_FILLED Order state will never happen if  - True / False
+1) PARTIALLY_FILLED Order state will never happen if immediateOrCancel - True / False
  
 
+
+
+Knowledge:
+immediateOrCancel => buy immediatelly or cancel
+
+
+Binance 
+
+Minimum sellable bitcoin are between Amount = 0.00030  and Amount = 0.000030 equivalent of (1 - 10 Euros)

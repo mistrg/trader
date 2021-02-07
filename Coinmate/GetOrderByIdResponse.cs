@@ -7,7 +7,7 @@ namespace Trader.Coinmate
 
         public bool error { get; set; }
         public string errorMessage { get; set; }
-        public List<Order> data { get; set; }
+        public Order data { get; set; }
 
     }
 }

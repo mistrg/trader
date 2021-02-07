@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Trader;
 using System.Linq;
+using System.Text.Json;
 
 namespace Trader.Binance
 {
@@ -18,9 +19,63 @@ namespace Trader.Binance
         {
             Pairs = new List<string>() { "BTCEUR", "ETHEUR" };
         }
-
-        static string uriBI = "https://api.binance.com/api/v3/depth";
+        static string baseUri = "https://api.binance.com/api/v3/";
         private static readonly HttpClient httpClient = new HttpClient();
+
+
+
+
+        public async Task<OrderResponse> SellMarketAsync(OrderCandidate orderCandidate)
+        {
+
+            var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() * 1000;
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("timestamp", timestamp.ToString()),
+
+                new KeyValuePair<string, string>("symbol", orderCandidate.Pair),
+                new KeyValuePair<string, string>("side", "SELL"),
+                new KeyValuePair<string, string>("type", "MARKET"),
+                new KeyValuePair<string, string>("quantity", string.Format("{0:0.##############}", orderCandidate.Amount)),
+                new KeyValuePair<string, string>("newOrderRespType","RESULT"),
+                //new KeyValuePair<string, string>("recvWindow","5000"), 
+                new KeyValuePair<string, string>("newClientOrderId",orderCandidate.Id.ToString()), 
+                
+                 
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+            var urlEncodedString = await content.ReadAsStringAsync();
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+
+
+
+
+
+            pairs.Add(new KeyValuePair<string, string>("signature", hashHMACHex));
+            var finalContent = new FormUrlEncodedContent(pairs);
+
+
+
+            finalContent.Headers.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+
+            var result = await httpClient.PostAsync(baseUri + "order", finalContent);
+
+            if (!result.IsSuccessStatusCode)
+            {
+                var str = await result.Content.ReadAsStringAsync();
+                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+            }
+
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<OrderResponse>(stream);
+                return res;
+            }
+        }
 
         public void ListenToOrderbook(CancellationToken stoppingToken)
         {
@@ -35,7 +90,7 @@ namespace Trader.Binance
 
                         try
                         {
-                            var res = await httpClient.GetFromJsonAsync<BIResult>(uriBI + "?symbol=" + pair);
+                            var res = await httpClient.GetFromJsonAsync<BIResult>(baseUri + "depth?symbol=" + pair);
 
                             foreach (var x in res.asks)
                             {

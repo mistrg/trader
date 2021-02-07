@@ -18,6 +18,23 @@ public static class TestSuite
 
 
         var result = await Processor.BuyLimitOrderAsync(oc);
-        Console.WriteLine($"Test result: {result}");
+        Console.WriteLine($"Test TestLowBuyAsync result: {result}");
     }
+
+    public static async Task TestLowSellAsync()
+    {
+        OrderCandidate oc = new OrderCandidate()
+        {
+            Amount = 0.00030, //10 Euro
+            Pair = "BTCEUR",
+            BuyExchange = nameof(Trader.Binance), 
+        };
+
+
+        var result = await Processor.SellMarketAsync(oc);
+        Console.WriteLine($"Test TestLowSellAsync result: {result}");
+    }
+
+
+    
 }

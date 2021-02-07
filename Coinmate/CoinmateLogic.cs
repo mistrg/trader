@@ -18,8 +18,8 @@ namespace Trader.Coinmate
         private static readonly HttpClient httpClient = new HttpClient();
 
         private string uri = "wss://coinmate.io/api/websocket/channel/order-book/";
-//        private string baseUri = "https://coinmate.io/api/";
-        private string baseUri = "https://private-fd7e9f-coinmate.apiary-mock.com/api/";
+        private string baseUri = "https://coinmate.io/api/";
+        //        private string baseUri = "https://private-fd7e9f-coinmate.apiary-mock.com/api/";
 
 
 
@@ -61,12 +61,15 @@ namespace Trader.Coinmate
 
             var result = await httpClient.PostAsync(baseUri + "orderById", content);
 
-            var xtr =await  result.Content.ReadAsStringAsync();
-Console.WriteLine(xtr);
+            if (!result.IsSuccessStatusCode)
+                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+
+            Console.WriteLine(await result.Content.ReadAsStringAsync());
+
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
                 var res = await JsonSerializer.DeserializeAsync<GetOrderByIdResponse>(stream);
-                return res.data[0];
+                return res.data;
             }
 
         }
@@ -92,6 +95,9 @@ Console.WriteLine(xtr);
             var content = new FormUrlEncodedContent(pairs);
 
             var result = await httpClient.PostAsync(baseUri + "orderHistory", content);
+
+            if (!result.IsSuccessStatusCode)
+                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
@@ -123,6 +129,10 @@ Console.WriteLine(xtr);
 
             var result = await httpClient.PostAsync(baseUri + "cancelOrder", content);
 
+            if (!result.IsSuccessStatusCode)
+                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+
+
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
                 var res = await JsonSerializer.DeserializeAsync<CancelOrderResponse>(stream);
@@ -144,13 +154,16 @@ Console.WriteLine(xtr);
                 new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
                 new KeyValuePair<string, string>("nonce", nonce.ToString()),
                 new KeyValuePair<string, string>("signature", hashHMACHex),
-                new KeyValuePair<string, string>("total", amountToPayInSecondCurrency.ToString()),
+                new KeyValuePair<string, string>("total", string.Format("{0:0.##############}", amountToPayInSecondCurrency)),
                 new KeyValuePair<string, string>("currencyPair", currencyPair)
             };
 
             var content = new FormUrlEncodedContent(pairs);
 
             var result = await httpClient.PostAsync(baseUri + "buyInstant", content);
+            if (!result.IsSuccessStatusCode)
+                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+
 
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
@@ -175,17 +188,20 @@ Console.WriteLine(xtr);
                 new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
                 new KeyValuePair<string, string>("nonce", nonce.ToString()),
                 new KeyValuePair<string, string>("signature", hashHMACHex),
-                new KeyValuePair<string, string>("amount", amount.ToString()),
-                new KeyValuePair<string, string>("price", price.ToString()),
+                new KeyValuePair<string, string>("amount", string.Format("{0:0.##############}", amount)),
+                new KeyValuePair<string, string>("price", string.Format("{0:0.##############}", price)),
                 new KeyValuePair<string, string>("currencyPair", currencyPair),
                 new KeyValuePair<string, string>("immediateOrCancel", 1.ToString()),
                 new KeyValuePair<string, string>("clientOrderId", clientOrderId.ToString()),
-                
+
             };
 
             var content = new FormUrlEncodedContent(pairs);
 
             var result = await httpClient.PostAsync(baseUri + "buyLimit", content);
+
+            if (!result.IsSuccessStatusCode)
+                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             using (var stream = await result.Content.ReadAsStreamAsync())
             {

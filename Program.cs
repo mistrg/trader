@@ -23,22 +23,21 @@ namespace Trader
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 8;
+            Version = 9;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
 
 
-            await TestSuite.TestLowBuyAsync();
-
-            return;
-
+             //await TestSuite.TestLowSellAsync();
+           // await TestSuite.TestLowBuyAsync();
+             
             new CoinmateLogic().ListenToOrderbook(CancellationToken.None);
 
             new BinanceLogic().ListenToOrderbook(CancellationToken.None);
 
             while (true)
             {
-                Thread.Sleep(300);
+                Thread.Sleep(200);
 
                 if (Console.KeyAvailable)
                 {
@@ -50,32 +49,30 @@ namespace Trader
 
 
 
-                foreach (var item in InMemDatabase.Instance.Items.Where(p => !p.InPosition))
+                foreach (var bookItem1 in InMemDatabase.Instance.Items.Where(p => !p.InPosition))
                 {
-                    var profit = InMemDatabase.Instance.Items.Where(p => p.Exch != item.Exch && p.Pair == item.Pair && (item.askPrice < p.bidPrice) && !p.InPosition);
-                    foreach (var p in profit)
+                    var bookItem2s = InMemDatabase.Instance.Items.Where(bookItem2 => bookItem2.Exch != bookItem1.Exch && bookItem2.Pair == bookItem1.Pair && (bookItem1.askPrice < bookItem2.bidPrice) && !bookItem2.InPosition);
+                    foreach (var bookItem2 in bookItem2s)
                     {
-                        if (item.InPosition || p.InPosition)
+                        if (bookItem1.InPosition || bookItem2.InPosition)
                             continue;
 
-                        var amount = Math.Min(item.amount, p.amount);
+                        var minimalAmount = Math.Min(bookItem1.amount, bookItem2.amount);
 
-                        var profitAbs = Math.Round(p.bidPrice.Value * amount - item.askPrice.Value * amount, 2);
+                        var profitGross = Math.Round(bookItem2.bidPrice.Value * minimalAmount - bookItem1.askPrice.Value * minimalAmount, 2);
 
-                        var buyFee = p.bidPrice.Value * amount * 0.0035;
-                        var sellFee = item.askPrice.Value * amount * 0.001;
+                        var buyFee = 0;
+                        var sellFee = Math.Round(bookItem2.bidPrice.Value * minimalAmount * 0.001,2);
 
 
-                        var profitReal = Math.Round(profitAbs - buyFee - sellFee, 2);
+                        var profitNet = Math.Round(profitGross - buyFee - sellFee, 2);
 
-                        var profitRate = Math.Round(100 * profitReal / (p.bidPrice.Value * amount), 2);
+                        var profitNetRate = Math.Round(100 * profitNet / (bookItem2.bidPrice.Value * minimalAmount), 2);
 
-                        if (profitReal <= 0)
+                        if (profitNet <= 0)
                             continue;
 
-                        CreateOrderCandidate(item, amount, p, profitAbs, profitReal, profitRate, buyFee, sellFee);
-
-
+                        CreateOrderCandidate(bookItem1, bookItem2, minimalAmount, profitGross, profitNet, profitNetRate, buyFee, sellFee);
                     }
                 }
             }
@@ -93,7 +90,7 @@ namespace Trader
             {
                 Console.WriteLine($"Do you wish to process following order? ");
                 Console.ForegroundColor = ConsoleColor.Blue;
-                PrintOrderCandidate(orderCandidate);
+                Presenter.PrintOrderCandidate(orderCandidate);
                 Console.ResetColor();
 
                 Console.WriteLine($"(y = yes / n = no) ");
@@ -107,18 +104,11 @@ namespace Trader
 
             }
             else
-            {
                 Console.WriteLine($"OrderCandidate: {offerCandidateId} not found. Continue...");
-
-            }
         }
 
-        private static void PrintOrderCandidate(OrderCandidate oc)
-        {
-            Console.WriteLine($"{oc.WhenCreated.ToString("dd.MM.yyyy HH:mm:ss")} OCID: {oc.Id} Buy {oc.Pair} on {oc.BuyExchange} for {oc.TotalAskPrice} and sell on {oc.SellExchange} for {oc.TotalBidPrice} and make {oc.ProfitReal} profit ({oc.ProfitRate}%)");
-
-        }
-        private static void CreateOrderCandidate(DBItem buy, double amount, DBItem sell, double profitAbs, double profitReal, double profitRate, double buyFee, double sellFee)
+ 
+        private static void CreateOrderCandidate(DBItem buy, DBItem sell, double minimalAmount, double profitGross, double profitNet, double profitNetRate, double buyFee, double sellFee)
         {
             sell.InPosition = true;
             buy.InPosition = true;
@@ -133,13 +123,13 @@ namespace Trader
                 SellExchange = sell.Exch,
                 Pair = buy.Pair,
                 UnitAskPrice = buy.askPrice.Value,
-                TotalAskPrice = Math.Round(buy.askPrice.Value * amount, 2),
-                Amount = amount,
+                TotalAskPrice = Math.Round(buy.askPrice.Value * minimalAmount, 2),
+                Amount = minimalAmount,
                 UnitBidPrice = sell.bidPrice.Value,
-                TotalBidPrice = Math.Round(sell.bidPrice.Value * amount, 2),
-                ProfitAbs = profitAbs,
-                ProfitReal = profitReal,
-                ProfitRate = profitRate,
+                TotalBidPrice = Math.Round(sell.bidPrice.Value * minimalAmount, 2),
+                ProfitGross = profitGross,
+                ProfitNet = profitNet,
+                ProfitNetRate = profitNetRate,
                 BuyFee = buyFee,
                 SellFee = sellFee,
                 BotVersion = Version,
@@ -147,8 +137,7 @@ namespace Trader
             };
             InMemDatabase.Instance.OrderCandidates.Add(oc.Id, oc);
 
-
-            PrintOrderCandidate(oc);
+            Presenter.PrintOrderCandidate(oc);
 
             try
             {

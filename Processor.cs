@@ -23,9 +23,9 @@ public static class Processor
         }
 
 
-        var isSucces = await BuyLimitOrderAsync(orderCandidate);
+        var isSuccess = await BuyLimitOrderAsync(orderCandidate);
 
-        if (isSucces)
+        if (isSuccess)
             await SellMarketAsync(orderCandidate);
 
     }
@@ -39,13 +39,12 @@ public static class Processor
             return true;
         }
 
-        Console.WriteLine($"Let's buy limit {orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} on {orderCandidate.BuyExchange}");
+        Presenter.PrintOrderCandidate(orderCandidate);
 
 
         var coinmateLogic = new CoinmateLogic();
 
-        //TODO: Check decimal 
-        //TODO: write trade to database
+
 
         BuyResponse buyResponse = null;
         try
@@ -61,7 +60,7 @@ public static class Processor
         }
         catch (System.Exception ex)
         {
-            Presenter.ShowPanic($"Buylimit failed. {ex.Message}. Process cancel...");
+            Presenter.ShowPanic($"Buylimit failed. {ex}. Process cancel...");
             return false;
         }
 
@@ -77,7 +76,7 @@ public static class Processor
             return false;
         }
 
-        if (buyResponse.data <= 0)
+        if (buyResponse.data == null || buyResponse.data <= 0)
         {
             Presenter.ShowPanic($"Buylimit failed. Invalid order ID. Process cancel...");
             return false;
@@ -91,7 +90,7 @@ public static class Processor
         {
             try
             {
-                result = coinmateLogic.GetOrderByOrderIdAsync(buyResponse.data).Result;
+                result = coinmateLogic.GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
             }
             catch (Exception ex)
             {
@@ -109,13 +108,21 @@ public static class Processor
             CancelOrderResponse buyCancelResult = null;
             try
             {
-                buyCancelResult = await coinmateLogic.CancelOrderAsync(buyResponse.data);
+                buyCancelResult = await coinmateLogic.CancelOrderAsync(buyResponse.data.Value);
             }
             catch (System.Exception ex)
             {
-                Presenter.ShowPanic($"CancelOrderAsync failed. {ex}. Maybe buy was successful. Please check coinmate manually.Process cancel...");
+                Presenter.ShowPanic($"CancelOrderAsync failed. {ex}. Maybe buy was successful. Please check coinmate manually and decide what to do.");
 
-                //TODO: In case of manual confirmation we could sell on binance 
+                Console.Write("Do you want to continue with selling? y = yes / n = no");
+                var val = Console.ReadLine();
+                if (val == "y")
+                {
+                    Console.WriteLine("Ok. Going to sell...");
+                    return true;
+                }
+                Console.WriteLine("Ok. Process cancel...");
+
                 return false;
             }
 
@@ -123,8 +130,15 @@ public static class Processor
                 Console.WriteLine("Order was cancelled successfully.Process cancel...");
             else
             {
-                Presenter.ShowPanic($"CancelOrderAsync  exited with wrong errorcode. Please check the coinmate platform manually...Process cancel...");
-                //TODO: In case of manual confirmation we could sell on binance 
+                Presenter.ShowPanic($"CancelOrderAsync  exited with wrong errorcode. Please check coinmate manually and decide what to do.");
+                Console.Write("Do you want to continue with selling? y = yes / n = no");
+                var val = Console.ReadLine();
+                if (val == "y")
+                {
+                    Console.WriteLine("Ok. Going to sell...");
+                    return true;
+                }
+                Console.WriteLine("Ok. Process cancel...");
             }
 
             return false;
@@ -138,26 +152,71 @@ public static class Processor
                 return false;
             }
             orderCandidate.Amount -= result.remainingAmount.Value;
-            Console.WriteLine($"Successful partial done.  Amount was updated to {orderCandidate.Amount} {orderCandidate.Pair}  on {orderCandidate.BuyExchange}.  ");
+            Console.WriteLine($"Successful partial done.  Amount was updated to {orderCandidate.Amount}.  {orderCandidate.Pair}  on {orderCandidate.BuyExchange}. Order type {result.orderTradeType} ");
 
         }
         else
         {
-            Console.WriteLine($"Successfuly bought {orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} on {orderCandidate.BuyExchange} status {result.status}");
+            Console.WriteLine($"Successfuly bought {orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} on {orderCandidate.BuyExchange} status {result.status} Order type {result.orderTradeType} ");
         }
 
         return true;
     }
     public static async Task<bool> SellMarketAsync(OrderCandidate orderCandidate)
     {
+
         if (!Config.ProcessTrades)
         {
-            Presenter.Warning("SellMarketAsync skipped. ProcessTrades is not activated");
+            Presenter.Warning("BuyLimitOrderAsync skipped. ProcessTrades is not activated");
             return true;
         }
 
-        Console.WriteLine($"Let's sell market {orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalBidPrice} on {orderCandidate.SellExchange}");
-        return true;
+        Presenter.PrintOrderCandidate(orderCandidate);
+
+
+        var binanceLogic = new BinanceLogic();
+
+        OrderResponse result = null;
+        try
+        {
+            result = await binanceLogic.SellMarketAsync(orderCandidate);
+
+        }
+        catch (System.Exception ex)
+        {
+            Presenter.ShowPanic($"SellMarketAsync failed. {ex}. Please check binance manually.");
+            return false;
+        }
+
+
+        // bool buySuccess = System.Threading.SpinWait.SpinUntil(() =>
+        // {
+        //     try
+        //     {
+        //         result = coinmateLogic.GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Presenter.ShowError($"GetOrderByOrderIdAsync failed. {ex} Retrying...");
+        //     }
+        //     return result != null && (result.status == "FILLED" || result.status == "PARTIALLY_FILLED");
+
+
+        // }, TimeSpan.FromMilliseconds(buyTimeoutInMs));
+
+
+        if (result == null)
+            Presenter.ShowPanic($"SellMarketAsync failed. Result is null.");
+
+        Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")}  OrderId {result.orderId} OCID {result.clientOrderId} {result.side} {result.type} price: {result.price} symbol: {result.symbol} Qty: {result.executedQty}/{result.origQty} cumQty: {result.cummulativeQuoteQty}");
+
+        if (result.status == "FILLED")
+            Console.WriteLine("Successfully sold");
+        else
+            Console.WriteLine("Check line above for problems");
+
+
+        return result.status == "FILLED";
 
     }
 }

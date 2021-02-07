@@ -28,13 +28,13 @@ public class OrderCandidate
     public double TotalBidPrice { get; set; }
 
 
-    public double ProfitAbs { get; set; }
+    public double ProfitGross { get; set; }
 
+    public double ProfitNet { get; internal set; }
 
-    public double ProfitRate { get; set; }
+    public double ProfitNetRate { get; set; }
     public string BotRunId { get; internal set; }
     public int BotVersion { get; internal set; }
-    public double ProfitReal { get; internal set; }
     public double BuyFee {get;set;}
 
     public double SellFee {get;set;}
