@@ -113,7 +113,11 @@ namespace Trader
 
                 var process = Console.ReadLine();
                 if (process == "y")
+                {
                     await Processor.ProcessOrderAsync(orderCandidate);
+                    Console.WriteLine("Press any key to continue ...");
+                    Console.ReadLine();
+                }
                 else
                     Console.WriteLine("Process cancelled. Continue...");
 

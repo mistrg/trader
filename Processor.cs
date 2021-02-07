@@ -185,13 +185,13 @@ public static class Processor
 
             }
             orderCandidate.Amount -= result.remainingAmount.Value;
-            Console.WriteLine($"Successful partial {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {result.price}/{orderCandidate.TotalAskPrice} on {orderCandidate.BuyExchange} status {result.status}. SellAmount updated.");
+            Console.WriteLine($"Successful partial {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price})  on {orderCandidate.BuyExchange} status {result.status}. SellAmount updated.");
 
 
         }
         else
         {
-            Console.WriteLine($"Successful {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {result.price}/{orderCandidate.TotalAskPrice} on {orderCandidate.BuyExchange} status {result.status}");
+            Console.WriteLine($"Successful {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price}) on {orderCandidate.BuyExchange} status {result.status}");
         }
 
         return new Tuple<bool, Order>(true, result);

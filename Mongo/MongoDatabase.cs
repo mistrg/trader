@@ -24,6 +24,11 @@ namespace Trader
                 client = new MongoClient(Config.ConnectionString);
                 db = client.GetDatabase("Trader");
             }
+            else
+            {
+                Presenter.Warning("CreateOrderCandidate skipped. WriteToMongo is not activated");
+
+            }
 
         }
 
@@ -33,7 +38,6 @@ namespace Trader
         {
             if (!Config.WriteToMongo)
             {
-                Presenter.Warning("CreateOrderCandidate skipped. WriteToMongo is not activated");
                 return;
             }
             var collection = db.GetCollection<OrderCandidate>("OrderCandidates");
