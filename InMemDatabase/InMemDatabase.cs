@@ -10,6 +10,7 @@ namespace Trader
     {
 
         public ConcurrentBag<DBItem> Items { get; set; }
+        public ConcurrentDictionary<long, OrderCandidate> OrderCandidates { get; internal set; }
 
         private static InMemDatabase instance = null;
         private static readonly object padlock = new object();
@@ -17,7 +18,7 @@ namespace Trader
         InMemDatabase()
         {
             Items = new ConcurrentBag<DBItem>();
-            OrderCandidates = new Dictionary<long, OrderCandidate>();
+            OrderCandidates = new ConcurrentDictionary<long, OrderCandidate>();
 
         }
 
@@ -36,7 +37,6 @@ namespace Trader
             }
         }
 
-        public Dictionary<long, OrderCandidate> OrderCandidates { get; internal set; }
     }
 
 

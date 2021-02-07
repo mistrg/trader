@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Trader;
 using System.Linq;
 using System.Text.Json;
+using Trader.Infrastructure;
 
 namespace Trader.Binance
 {
@@ -21,8 +22,6 @@ namespace Trader.Binance
         }
         static string baseUri = "https://api.binance.com/api/v3/";
         private static readonly HttpClient httpClient = new HttpClient();
-
-
 
 
         public async Task<OrderResponse> SellMarketAsync(OrderCandidate orderCandidate)

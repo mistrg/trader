@@ -8,19 +8,18 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Trader.Infrastructure;
 
 namespace Trader.Coinmate
 {
 
     public class CoinmateLogic
     {
-
         private static readonly HttpClient httpClient = new HttpClient();
+
 
         private string uri = "wss://coinmate.io/api/websocket/channel/order-book/";
         private string baseUri = "https://coinmate.io/api/";
-        //        private string baseUri = "https://private-fd7e9f-coinmate.apiary-mock.com/api/";
-
 
 
         public List<string> Pairs { get; }
@@ -208,14 +207,7 @@ namespace Trader.Coinmate
                 var res = await JsonSerializer.DeserializeAsync<BuyResponse>(stream);
                 return res;
             }
-
-
-
         }
-
-
-
-
 
         public void ListenToOrderbook(CancellationToken stoppingToken)
         {
@@ -249,12 +241,8 @@ namespace Trader.Coinmate
             }
         }
 
-
         private async Task Send(ClientWebSocket socket, string data, CancellationToken stoppingToken) =>
             await socket.SendAsync(Encoding.UTF8.GetBytes(data), WebSocketMessageType.Binary, true, stoppingToken);
-
-
-
 
         private async Task Receive(ClientWebSocket socket, CancellationToken stoppingToken, string pair)
         {
