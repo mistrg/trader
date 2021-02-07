@@ -28,9 +28,9 @@ namespace Trader
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
 
 
-             //await TestSuite.TestLowSellAsync();
-           // await TestSuite.TestLowBuyAsync();
-             
+            //await TestSuite.TestLowSellAsync();
+            // await TestSuite.TestLowBuyAsync();
+
             new CoinmateLogic().ListenToOrderbook(CancellationToken.None);
 
             new BinanceLogic().ListenToOrderbook(CancellationToken.None);
@@ -62,7 +62,7 @@ namespace Trader
                         var profitGross = Math.Round(bookItem2.bidPrice.Value * minimalAmount - bookItem1.askPrice.Value * minimalAmount, 2);
 
                         var buyFee = 0;
-                        var sellFee = Math.Round(bookItem2.bidPrice.Value * minimalAmount * 0.001,2);
+                        var sellFee = Math.Round(bookItem2.bidPrice.Value * minimalAmount * 0.001, 2);
 
 
                         var profitNet = Math.Round(profitGross - buyFee - sellFee, 2);
@@ -107,7 +107,7 @@ namespace Trader
                 Console.WriteLine($"OrderCandidate: {offerCandidateId} not found. Continue...");
         }
 
- 
+
         private static void CreateOrderCandidate(DBItem buy, DBItem sell, double minimalAmount, double profitGross, double profitNet, double profitNetRate, double buyFee, double sellFee)
         {
             sell.InPosition = true;
