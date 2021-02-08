@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,8 @@ namespace Trader
 
             var serviceProvider = services.BuildServiceProvider();
 
+
+                
             // calls the Run method in App, which is replacing Main
             await serviceProvider.GetService<App>().RunAsync();
         }

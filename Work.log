@@ -19,9 +19,3 @@ add logging framework to protocol all htttp requests
 verify that we have enough crypto on sell exchanges
 verify that we have enough euro on buy exchange
 
-
-
-
-
-Solve 
-An exception of type 'System.InvalidOperationException' occurred in System.Private.CoreLib.dll but was not handled in user code: 'Operations that change non-concurrent collections must have exclusive access. A concurrent update was performed on this collection and corrupted its state. The collection's state is no longer correct.'

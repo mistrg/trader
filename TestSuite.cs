@@ -23,9 +23,10 @@ public static class TestSuite
 
     public static async Task TestLowSellAsync()
     {
+        var amount = Math.Round(0.09335303,6);
         OrderCandidate oc = new OrderCandidate()
         {
-            Amount = 0.00030, //10 Euro
+            Amount = amount, 
             Pair = "BTCEUR",
             BuyExchange = nameof(Trader.Binance), 
         };
@@ -34,6 +35,10 @@ public static class TestSuite
         var result = await Processor.SellMarketAsync(oc);
         Console.WriteLine($"Test TestLowSellAsync result: {result}");
     }
+
+
+
+
 
 
     

@@ -44,7 +44,7 @@ public static class Processor
             return;
         }
 
-        var successMessage = $"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Arbitrage success. OCID {orderCandidate.Id} estNetProfit {orderCandidate.EstProfitNet} realNetProfit {sellResult.Item2.priceNum -  buyResult.Item2.price}";
+        var successMessage = $"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Arbitrage success. OCID {orderCandidate.Id} estNetProfit {orderCandidate.EstProfitNet} realNetProfit {sellResult.Item2.cummulativeQuoteQtyNum -  orderCandidate.TotalAskPrice}";
         Presenter.ShowSuccess(successMessage);
         await sms.SendSmsAsync(successMessage);
 

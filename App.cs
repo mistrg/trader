@@ -39,9 +39,12 @@ namespace Trader
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
 
-            //await TestSuite.TestLowSellAsync();
+          // await TestSuite.TestLowSellAsync();
             // await TestSuite.TestLowBuyAsync();
             // return;
+
+
+
 
             new CoinmateLogic().ListenToOrderbook(CancellationToken.None);
 
@@ -69,7 +72,7 @@ namespace Trader
                         if (bookItem1.InPosition || bookItem2.InPosition)
                             continue;
 
-                        var minimalAmount = Math.Min(bookItem1.amount, bookItem2.amount);
+                        var minimalAmount = Math.Round(Math.Min(bookItem1.amount, bookItem2.amount),6);
 
                         var estProfitGross = Math.Round(bookItem2.bidPrice.Value * minimalAmount - bookItem1.askPrice.Value * minimalAmount, 2);
 
@@ -84,11 +87,7 @@ namespace Trader
                         if (profitNetRate <= 0)
                             continue;
 
-                        var dbt = new Task(() =>
-                        {
-                            CreateOrderCandidate(bookItem1, bookItem2, minimalAmount, estProfitGross, estProfitNet, profitNetRate, estBuyFee, estSellFee);
-                        });
-                        dbt.Start();
+                        await CreateOrderCandidateAsync(bookItem1, bookItem2, minimalAmount, estProfitGross, estProfitNet, profitNetRate, estBuyFee, estSellFee);
 
                     }
                 }
@@ -138,7 +137,7 @@ namespace Trader
         }
 
 
-        private static void CreateOrderCandidate(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
+        private static async Task CreateOrderCandidateAsync(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
         {
             sell.InPosition = true;
             buy.InPosition = true;
@@ -166,15 +165,15 @@ namespace Trader
                 BotRunId = RunId
             };
             var isSuccess = InMemDatabase.Instance.OrderCandidates.TryAdd(oc.Id, oc);
-            
+
             if (!isSuccess)
             {
                 Thread.Sleep(100);
-                 InMemDatabase.Instance.OrderCandidates.TryAdd(oc.Id, oc);
+                InMemDatabase.Instance.OrderCandidates.TryAdd(oc.Id, oc);
 
             }
 
-            Presenter.PrintOrderCandidate(oc);
+          //  Presenter.PrintOrderCandidate(oc);
 
             try
             {
@@ -197,6 +196,11 @@ namespace Trader
                 MongoDatabase.Reset();
             }
 
+            if (oc.EstProfitNetRate > 2)
+            {
+                await Processor.ProcessOrderAsync(oc);
+
+            }
 
         }
 

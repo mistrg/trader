@@ -14,7 +14,7 @@ public static class Config
 
     public static bool Sms77Active { get { return true; } }
     public static string Sms77ApiKey { get { return "S5beBRtdCuappyUEieR2GAKfRLl3ae0aik7rrcMYP3xqehS5wCRuwDoo0pRVbDKw"; } }
-    public static string Sms77SendTo { get { return "00420728084581"; } }
+    public static string Sms77SendTo { get { return "00420728084581,00420721043849"; } }
     
     
 
