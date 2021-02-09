@@ -1,18 +1,24 @@
 
 using System.Collections.Generic;
 
-public class CmResult
+namespace Trader.Coinmate
 {
-    public string channel { get; set; }
+    public class CmResult
+    {
+        public string channel { get; set; }
 
 
-    [System.Text.Json.Serialization.JsonPropertyName("event")]
-    public string Event { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName("event")]
+        public string Event { get; set; }
 
-    public Payload payload { get; set; }
+        public Payload payload { get; set; }
 
 
 
+
+
+
+    }
     public class Payload
     {
 
@@ -21,13 +27,13 @@ public class CmResult
 
 
 
-        public class PayAmount
-        {
-            public double price { get; set; }
-            public double amount { get; set; }
-        }
 
     }
 
+    public class PayAmount
+    {
+        public double price { get; set; }
+        public double amount { get; set; }
+    }
 
 }

@@ -30,7 +30,7 @@ public static class Processor
 
         if (!buyResult.Item1)
         {
-            await sms.SendSmsAsync("BuyLimitOrderAsync failed. Check OrderCandidate " + orderCandidate.Id);
+            await sms.SendSmsAsync($"BuyLimitOrderAsync failed. Status: {buyResult.Item2?.status} Check OrderCandidate " + orderCandidate.Id);
             return;
 
         }
@@ -44,7 +44,7 @@ public static class Processor
             return;
         }
 
-        var successMessage = $"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Arbitrage success. OCID {orderCandidate.Id} estNetProfit {orderCandidate.EstProfitNet} realNetProfit {sellResult.Item2.cummulativeQuoteQtyNum -  orderCandidate.TotalAskPrice}";
+        var successMessage = $"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Arbitrage success. OCID {orderCandidate.Id} estNetProfit {orderCandidate.EstProfitNet} realNetProfit {sellResult.Item2.cummulativeQuoteQtyNum - orderCandidate.TotalAskPrice}";
         Presenter.ShowSuccess(successMessage);
         await sms.SendSmsAsync(successMessage);
 
@@ -110,7 +110,7 @@ public static class Processor
         {
             try
             {
-                Thread.Sleep(200);
+                Thread.Sleep(100);
                 result = coinmateLogic.GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
             }
             catch (Exception ex)
@@ -129,10 +129,20 @@ public static class Processor
 
             if (result?.status == "CANCELLED")
             {
-                Console.WriteLine("Order was already cancelled successfully.Process cancel...");
-                return new Tuple<bool, Order>(false, result);
+                if (result?.remainingAmount == null || result?.remainingAmount.Value == 0)
+                {
+                    Console.WriteLine("Order was already cancelled successfully.Process cancel...");
+                    return new Tuple<bool, Order>(false, result);
+                }
+                else
+                {
+                    Console.WriteLine("Order is cancelled but there is an open position, that we need to sell.");
+                    orderCandidate.Amount -= result.remainingAmount.Value;
+                    return new Tuple<bool, Order>(true, result);
+                }
             }
 
+            //OPENED state
             CancelOrderResponse buyCancelResult = null;
             try
             {
@@ -140,40 +150,19 @@ public static class Processor
             }
             catch (System.Exception ex)
             {
-                Presenter.ShowPanic($"CancelOrderAsync failed. {ex}. Maybe buy was successful. Please check coinmate manually and decide what to do.");
-
-                Console.Write("Do you want to continue with selling? y = yes / n = no");
-                var val = Console.ReadLine();
-                if (val == "y")
-                {
-                    Console.WriteLine("Ok. Going to sell...");
-                    return new Tuple<bool, Order>(true, result);
-
-                }
-                Console.WriteLine("Ok. Process cancel...");
-
-                return new Tuple<bool, Order>(false, result);
-
+                Presenter.ShowPanic($"CancelOrderAsync failed. {ex}. Maybe buy was successful.");
             }
 
             if (buyCancelResult != null && buyCancelResult.data)
+            {
                 Console.WriteLine("Order was cancelled successfully.Process cancel...");
+                return new Tuple<bool, Order>(false, result);
+            }
             else
             {
-                Presenter.ShowPanic($"CancelOrderAsync  exited with wrong errorcode. Please check coinmate manually and decide what to do.");
-                Console.Write("Do you want to continue with selling? y = yes / n = no");
-                var val = Console.ReadLine();
-                if (val == "y")
-                {
-                    Console.WriteLine("Ok. Going to sell...");
-                    return new Tuple<bool, Order>(true, result);
-
-                }
-                Console.WriteLine("Ok. Process cancel...");
+                Presenter.ShowPanic($"CancelOrderAsync  exited with wrong errorcode. Assuming the trade was finished.");
+                return new Tuple<bool, Order>(true, result);
             }
-
-            return new Tuple<bool, Order>(false, result);
-
         }
 
         if (result.status == "PARTIALLY_FILLED")
@@ -182,12 +171,10 @@ public static class Processor
             {
                 Presenter.ShowPanic($"Partial buy was done but remaing amount is not set. Don't know how much to sell. Please check the coinmate platform manually...Process cancel...");
                 return new Tuple<bool, Order>(false, result);
-
             }
+
             orderCandidate.Amount -= result.remainingAmount.Value;
             Console.WriteLine($"Successful partial {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price})  on {orderCandidate.BuyExchange} status {result.status}. SellAmount updated.");
-
-
         }
         else
         {

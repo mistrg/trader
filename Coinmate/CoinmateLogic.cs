@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -38,6 +39,35 @@ namespace Trader.Coinmate
             return shortPair;
         }
 
+        public async Task<List<DBItem>> GetOrderBookAsync(string pair)
+        {
+            var spair = pair.Replace("_", "");
+            var result = new List<DBItem>();
+            try
+            {
+                var res = await httpClient.GetFromJsonAsync<OrderBookResponse>($"{baseUri}orderBook?currencyPair={pair}&groupByPriceLimit=False");
+
+                if (res.data == null)
+                    return result;
+                foreach (var x in res.data.asks)
+                {
+
+                    result.Add(new DBItem() { Exch = nameof(Coinmate), Pair = spair, amount = x.amount, askPrice = x.price });
+                }
+
+
+                foreach (var x in res.data.bids)
+                {
+                    result.Add(new DBItem() { Exch = nameof(Coinmate), Pair = spair, amount = x.amount, bidPrice = x.price });
+                }
+
+
+            }
+            catch
+            {
+            }
+            return result;
+        }
         public async Task<Order> GetOrderByOrderIdAsync(long orderId)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
@@ -73,6 +103,64 @@ namespace Trader.Coinmate
 
         }
 
+     public async Task GetTradeHistoryAsync()
+        {
+             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+                new KeyValuePair<string, string>("nonce", nonce.ToString()),
+                new KeyValuePair<string, string>("signature", hashHMACHex),
+
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+
+            var result = await httpClient.PostAsync(baseUri + "tradeHistory", content);
+
+            if (!result.IsSuccessStatusCode)
+                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+
+            var resa = await result.Content.ReadAsStringAsync();
+            Console.WriteLine(resa);
+            
+        }
+        public async Task GetTransactionHistoryAsync()
+        {
+             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+                new KeyValuePair<string, string>("nonce", nonce.ToString()),
+                new KeyValuePair<string, string>("signature", hashHMACHex),
+
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+
+            var result = await httpClient.PostAsync(baseUri + "transactionHistory", content);
+
+            if (!result.IsSuccessStatusCode)
+                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+
+            var resa = await result.Content.ReadAsStringAsync();
+            Console.WriteLine(resa);
+            
+        }
+
+
         public async Task<List<OrderHistory>> GetOrderHistoryAsync(string currencyPair)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
@@ -98,6 +186,8 @@ namespace Trader.Coinmate
             if (!result.IsSuccessStatusCode)
                 Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
+            var resa = await result.Content.ReadAsStringAsync();
+            Console.WriteLine(resa);
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
                 var res = await JsonSerializer.DeserializeAsync<GetOrderHistoryResponse>(stream);

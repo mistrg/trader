@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -35,44 +36,56 @@ namespace Trader
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 9;
+            Version = 10;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
 
-          // await TestSuite.TestLowSellAsync();
+            // await TestSuite.TestLowSellAsync();
             // await TestSuite.TestLowBuyAsync();
             // return;
-
-
-
-
-            new CoinmateLogic().ListenToOrderbook(CancellationToken.None);
-
-            new BinanceLogic().ListenToOrderbook(CancellationToken.None);
-
+            
+            long lastCycle = 0;
             while (true)
             {
-                Thread.Sleep(200);
-
-                if (Console.KeyAvailable)
+                if (lastCycle < 620) //We can query coinmate every 0.6 sec
                 {
-                    if (Console.ReadKey(true).Key == ConsoleKey.B)
-                    {
-                        await CandidateSelectionAsync();
-                    }
+                    var x = 620 - (int)lastCycle;
+                    Thread.Sleep(x);
                 }
 
+                var timer = new Stopwatch();
+                timer.Start();
+
+                var bob = await new BinanceLogic().GetOrderBookAsync("BTCEUR");
+
+              
+                var cob = await new CoinmateLogic().GetOrderBookAsync("BTC_EUR");
+
+                var db = bob.Union(cob);
 
 
-                foreach (var bookItem1 in InMemDatabase.Instance.Items.Where(p => !p.InPosition))
+                // if (Console.KeyAvailable)
+                // {
+                //     if (Console.ReadKey(true).Key == ConsoleKey.B)
+                //     {
+                //         await CandidateSelectionAsync();
+                //     }
+                // }
+
+
+
+                foreach (var bookItem1 in db.Where(p => !p.InPosition))
                 {
-                    var bookItem2s = InMemDatabase.Instance.Items.Where(bookItem2 => bookItem2.Exch != bookItem1.Exch && bookItem2.Pair == bookItem1.Pair && (bookItem1.askPrice < bookItem2.bidPrice) && !bookItem2.InPosition);
+                    var bookItem2s = db.Where(bookItem2 => bookItem2.Exch != bookItem1.Exch && bookItem2.Pair == bookItem1.Pair && (bookItem1.askPrice < bookItem2.bidPrice) && !bookItem2.InPosition);
                     foreach (var bookItem2 in bookItem2s)
                     {
                         if (bookItem1.InPosition || bookItem2.InPosition)
                             continue;
 
-                        var minimalAmount = Math.Round(Math.Min(bookItem1.amount, bookItem2.amount),6);
+                        var minimalAmount = Math.Round(Math.Min(bookItem1.amount, bookItem2.amount), 6);
+
+                        if (minimalAmount <= 0.0002)
+                            continue; //Too small for coinmate
 
                         var estProfitGross = Math.Round(bookItem2.bidPrice.Value * minimalAmount - bookItem1.askPrice.Value * minimalAmount, 2);
 
@@ -91,11 +104,17 @@ namespace Trader
 
                     }
                 }
+
+                //B: Run stuff you want timed
+                timer.Stop();
+
+                TimeSpan timeTaken = timer.Elapsed;
+                lastCycle = timer.ElapsedMilliseconds;
+
             }
 
 
         }
-
 
         public static async Task CandidateSelectionAsync()
         {
@@ -136,7 +155,6 @@ namespace Trader
                 Console.WriteLine($"OrderCandidate: {offerCandidateId} not found. Continue...");
         }
 
-
         private static async Task CreateOrderCandidateAsync(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
         {
             sell.InPosition = true;
@@ -165,7 +183,6 @@ namespace Trader
                 BotRunId = RunId
             };
             var isSuccess = InMemDatabase.Instance.OrderCandidates.TryAdd(oc.Id, oc);
-
             if (!isSuccess)
             {
                 Thread.Sleep(100);
@@ -173,7 +190,14 @@ namespace Trader
 
             }
 
-          //  Presenter.PrintOrderCandidate(oc);
+            Presenter.PrintOrderCandidate(oc);
+
+
+            if (Config.AutomatedTrading && oc.EstProfitNetRate > 1)
+            {
+                await Processor.ProcessOrderAsync(oc);
+
+            }
 
             try
             {
@@ -196,11 +220,7 @@ namespace Trader
                 MongoDatabase.Reset();
             }
 
-            if (oc.EstProfitNetRate > 2)
-            {
-                await Processor.ProcessOrderAsync(oc);
 
-            }
 
         }
 

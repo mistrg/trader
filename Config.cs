@@ -18,8 +18,8 @@ public static class Config
     
     
 
-    public static bool WriteToMongo { get { return false; } }
-
+    public static bool WriteToMongo { get { return true; } }
+    public static bool AutomatedTrading { get { return true; } }
     public static bool ProcessTrades { get { return true; } }
 
 

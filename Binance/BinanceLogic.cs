@@ -39,9 +39,9 @@ namespace Trader.Binance
                 new KeyValuePair<string, string>("quantity", string.Format("{0:0.##############}", orderCandidate.Amount)),
                 new KeyValuePair<string, string>("newOrderRespType","RESULT"),
                 //new KeyValuePair<string, string>("recvWindow","5000"), 
-                new KeyValuePair<string, string>("newClientOrderId",orderCandidate.Id.ToString()), 
-                
-                 
+                new KeyValuePair<string, string>("newClientOrderId",orderCandidate.Id.ToString()),
+
+
             };
 
             var content = new FormUrlEncodedContent(pairs);
@@ -76,6 +76,37 @@ namespace Trader.Binance
             }
         }
 
+
+        public async Task<List<DBItem>> GetOrderBookAsync(string pair)
+        {
+            var result = new List<DBItem>();
+            try
+            {
+                var res = await httpClient.GetFromJsonAsync<BIResult>(baseUri + "depth?symbol=" + pair);
+
+                foreach (var x in res.asks)
+                {
+                    var amount = double.Parse(x[1]);
+                    var price = double.Parse(x[0]);
+                    result.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price });
+                }
+
+
+                foreach (var x in res.bids)
+                {
+                    var amount = double.Parse(x[1]);
+                    var price = double.Parse(x[0]);
+
+                        result.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price });
+                }
+
+               
+            }
+            catch
+            {
+            }
+            return result;
+        }
         public void ListenToOrderbook(CancellationToken stoppingToken)
         {
 
@@ -86,7 +117,6 @@ namespace Trader.Binance
                 {
                     while (!stoppingToken.IsCancellationRequested)
                     {
-
                         try
                         {
                             var res = await httpClient.GetFromJsonAsync<BIResult>(baseUri + "depth?symbol=" + pair);
@@ -121,12 +151,12 @@ namespace Trader.Binance
                                     w.EndDate = DateTime.Now;
 
                             }
-
-                            Thread.Sleep(500);
                         }
                         catch
                         {
                         }
+
+
                     }
                 }, stoppingToken);
 
