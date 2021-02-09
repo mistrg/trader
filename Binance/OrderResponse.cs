@@ -23,7 +23,7 @@ namespace Trader.Binance
         public double executedQtyNum { get { return string.IsNullOrWhiteSpace(executedQty) ? 0 : double.Parse(executedQty); } }
         public double cummulativeQuoteQtyNum { get { return string.IsNullOrWhiteSpace(cummulativeQuoteQty) ? 0 : double.Parse(cummulativeQuoteQty); } }
 
-
+        
     }
 
 }

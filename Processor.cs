@@ -11,7 +11,7 @@ using Trader.PostgresDb;
 
 public class Processor
 {
-        private readonly PostgresContext _context;
+    private readonly PostgresContext _context;
 
     public Processor(PostgresContext context)
     {
@@ -22,6 +22,7 @@ public class Processor
     public async Task ProcessOrderAsync(OrderCandidate orderCandidate)
     {
 
+
         if (!(orderCandidate.BuyExchange == nameof(Trader.Coinmate) && orderCandidate.SellExchange == nameof(Trader.Binance)))
         {
             Presenter.ShowError("Unsupported exchnages. Process cancel...");
@@ -30,36 +31,50 @@ public class Processor
 
         var sms = new SmsLogic();
 
+        var arbitrage = _context.MakeTradeObj(orderCandidate);
+        _context.Arbitrages.Add(arbitrage);
 
-        var buyResult = await BuyLimitOrderAsync(orderCandidate);
+        var buyResult = await BuyLimitOrderAsync(orderCandidate, arbitrage);
 
         if (!buyResult.Item1)
         {
             await sms.SendSmsAsync($"BuyLimitOrderAsync failed. Status: {buyResult.Item2?.status} Check OrderCandidate " + orderCandidate.Id);
+            await _context.SaveChangesAsync();
             return;
 
         }
 
-        var sellResult = await SellMarketAsync(orderCandidate);
+        var sellResult = await SellMarketAsync(orderCandidate, arbitrage);
 
         if (!sellResult.Item1)
         {
             await sms.SendSmsAsync("SellMarketAsync failed. Check OrderCandidate " + orderCandidate.Id);
+            await _context.SaveChangesAsync();
             return;
         }
 
         var successMessage = $"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Arbitrage success. OCID {orderCandidate.Id} estNetProfit {orderCandidate.EstProfitNet} realNetProfit {sellResult.Item2.cummulativeQuoteQtyNum - orderCandidate.TotalAskPrice}";
+
+        
+
         Presenter.ShowSuccess(successMessage);
         await sms.SendSmsAsync(successMessage);
 
+        arbitrage.Comment = successMessage;
+        arbitrage.IsSuccess = true;
+        await _context.SaveChangesAsync();
+
+
+
     }
 
-    public async Task<Tuple<bool, Order>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
+    public async Task<Tuple<bool, Order>> BuyLimitOrderAsync(OrderCandidate orderCandidate, Arbitrage arbitrage)
     {
 
         if (!Config.ProcessTrades)
         {
-            Presenter.Warning("BuyLimitOrderAsync skipped. ProcessTrades is not activated");
+            arbitrage.Comment = "BuyLimitOrderAsync skipped. ProcessTrades is not activated";
+            Presenter.Warning(arbitrage.Comment);
             return new Tuple<bool, Order>(true, null);
         }
 
@@ -76,7 +91,9 @@ public class Processor
             var pair = coinmateLogic.GetLongPair(orderCandidate.Pair);
             if (!coinmateLogic.Pairs.Any(p => p == pair))
             {
-                Presenter.ShowError("Unsupported currency pair. Process cancel...");
+                arbitrage.Comment = "Unsupported currency pair. Process cancel...";
+                Presenter.ShowError(arbitrage.Comment);
+
                 return new Tuple<bool, Order>(false, null);
             }
 
@@ -84,29 +101,35 @@ public class Processor
         }
         catch (System.Exception ex)
         {
-            Presenter.ShowPanic($"Buylimit failed. {ex}. Process cancel...");
+            arbitrage.Comment = $"Buylimit failed. {ex}. Process cancel...";
+
+            Presenter.ShowPanic(arbitrage.Comment);
             return new Tuple<bool, Order>(false, null);
         }
 
         if (buyResponse == null)
         {
-            Presenter.ShowError($"Buyresponse is empty. Process cancel...");
+            arbitrage.Comment = $"Buyresponse is empty. Process cancel...";
+            Presenter.ShowError(arbitrage.Comment);
             return new Tuple<bool, Order>(false, null);
         }
 
         if (buyResponse.error)
         {
-            Presenter.ShowError($"Buylimit failed. {buyResponse.errorMessage}. Process cancel...");
+            arbitrage.Comment = $"Buylimit failed. {buyResponse.errorMessage}. Process cancel...";
+            Presenter.ShowError(arbitrage.Comment);
             return new Tuple<bool, Order>(false, null);
         }
 
         if (buyResponse.data == null || buyResponse.data <= 0)
         {
-            Presenter.ShowPanic($"Buylimit failed. Invalid order ID. Process cancel...");
+            arbitrage.Comment = $"Buylimit failed. Invalid order ID. Process cancel...";
+            Presenter.ShowPanic(arbitrage.Comment);
             return new Tuple<bool, Order>(false, null);
         }
 
         Console.WriteLine($"Waiting for buy confirmation");
+        arbitrage.BuyOrderId = buyResponse.data;
 
         Order result = null;
 
@@ -116,6 +139,7 @@ public class Processor
             {
                 Thread.Sleep(100);
                 result = coinmateLogic.GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
+                _context.EnrichBuy(arbitrage, result);
             }
             catch (Exception ex)
             {
@@ -135,13 +159,16 @@ public class Processor
             {
                 if (result?.remainingAmount == null || result?.remainingAmount.Value == 0)
                 {
-                    Console.WriteLine("Order was already cancelled successfully.Process cancel...");
+                    arbitrage.Comment = "Order was already cancelled successfully.Process cancel...";
+                    Console.WriteLine(arbitrage.Comment);
+
                     return new Tuple<bool, Order>(false, result);
                 }
                 else
                 {
-                    Console.WriteLine("Order is cancelled but there is an open position, that we need to sell.");
                     orderCandidate.Amount -= result.remainingAmount.Value;
+                    arbitrage.Comment = $"Order is cancelled but there is an open position, that we need to sell. Amount adjusted to {orderCandidate.Amount}.";
+                    Console.WriteLine(arbitrage.Comment);
                     return new Tuple<bool, Order>(true, result);
                 }
             }
@@ -159,12 +186,15 @@ public class Processor
 
             if (buyCancelResult != null && buyCancelResult.data)
             {
-                Console.WriteLine("Order was cancelled successfully.Process cancel...");
+                arbitrage.Comment = "Order was cancelled successfully.Process cancel...";
+                Console.WriteLine(arbitrage.Comment);
+
                 return new Tuple<bool, Order>(false, result);
             }
             else
             {
-                Presenter.ShowPanic($"CancelOrderAsync  exited with wrong errorcode. Assuming the trade was finished.");
+                arbitrage.Comment = $"CancelOrderAsync  exited with wrong errorcode. Assuming the trade was finished.";
+                Presenter.ShowPanic(arbitrage.Comment);
                 return new Tuple<bool, Order>(true, result);
             }
         }
@@ -173,11 +203,13 @@ public class Processor
         {
             if (result.remainingAmount is null)
             {
-                Presenter.ShowPanic($"Partial buy was done but remaing amount is not set. Don't know how much to sell. Please check the coinmate platform manually...Process cancel...");
+                arbitrage.Comment = $"Partial buy was done but remaing amount is not set. Don't know how much to sell. Please check the coinmate platform manually...Process cancel...";
+                Presenter.ShowPanic(arbitrage.Comment);
                 return new Tuple<bool, Order>(false, result);
             }
 
             orderCandidate.Amount -= result.remainingAmount.Value;
+
             Console.WriteLine($"Successful partial {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price})  on {orderCandidate.BuyExchange} status {result.status}. SellAmount updated.");
         }
         else
@@ -188,12 +220,13 @@ public class Processor
         return new Tuple<bool, Order>(true, result);
 
     }
-    public async Task<Tuple<bool, OrderResponse>> SellMarketAsync(OrderCandidate orderCandidate)
+    public async Task<Tuple<bool, OrderResponse>> SellMarketAsync(OrderCandidate orderCandidate, Arbitrage arbitrage)
     {
 
         if (!Config.ProcessTrades)
         {
-            Presenter.Warning("BuyLimitOrderAsync skipped. ProcessTrades is not activated");
+            arbitrage.Comment = "BuyLimitOrderAsync skipped. ProcessTrades is not activated";
+            Presenter.Warning(arbitrage.Comment);
             return new Tuple<bool, OrderResponse>(true, null);
         }
         Console.WriteLine("Let's sell");
@@ -210,13 +243,20 @@ public class Processor
         }
         catch (System.Exception ex)
         {
-            Presenter.ShowPanic($"SellMarketAsync failed. {ex}. Please check binance manually.");
+            arbitrage.Comment = $"SellMarketAsync failed. {ex}. Please check binance manually.";
+            Presenter.ShowPanic(arbitrage.Comment);
             return new Tuple<bool, OrderResponse>(false, null);
 
         }
 
         if (result == null)
-            Presenter.ShowPanic($"SellMarketAsync failed. Result is null.");
+        {
+            arbitrage.Comment = $"SellMarketAsync failed. Result is null.";
+            Presenter.ShowPanic(arbitrage.Comment);
+            return new Tuple<bool, OrderResponse>(false, null);
+        }
+
+        _context.EnrichSell(arbitrage, result);
 
         Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} {result.side} {result.type} OrderId {result.orderId} OCID {result.clientOrderId}  price: {result.price} symbol: {result.symbol} Qty: {result.executedQty}/{result.origQty} cumQty: {result.cummulativeQuoteQty}");
 

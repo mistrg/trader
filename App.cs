@@ -7,6 +7,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Trader.Binance;
 using Trader.Coinmate;
+using Trader.Infrastructure;
+using Trader.PostgresDb;
 
 namespace Trader
 {
@@ -14,6 +16,8 @@ namespace Trader
     {
         private readonly IConfiguration _config;
         private readonly Processor _processor;
+            private readonly PostgresContext _context;
+
 
         private static int _dbRetries = 0;
 
@@ -21,10 +25,11 @@ namespace Trader
         public static int Version;
 
 
-        public App(IConfiguration config, Processor processor)
+        public App(IConfiguration config, Processor processor, PostgresContext context )
         {
             _config = config;
             _processor = processor;
+            _context = context;
         }
 
         public async Task RunAsync()
@@ -46,8 +51,22 @@ namespace Trader
 
             // await TestSuite.TestLowSellAsync();
             // await TestSuite.TestLowBuyAsync();
-            // return;
+            var a  = new Arbitrage()
+            {
+                BotVersion = App.Version, 
+                BotRunId = App.RunId, 
+                BuyExchange = nameof (Coinmate), 
+                BuyWhenCreated = Helper.UnixTimeStampToDateTime(1612826743280)
+
+            };
+            _context.Arbitrages.Add(a);
+            await _context.SaveChangesAsync();
+             return;
             
+
+            
+
+
             long lastCycle = 0;
             while (true)
             {
