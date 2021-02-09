@@ -16,7 +16,7 @@ namespace Trader
     {
         private readonly IConfiguration _config;
         private readonly Processor _processor;
-            private readonly PostgresContext _context;
+        private readonly PostgresContext _context;
 
 
         private static int _dbRetries = 0;
@@ -25,7 +25,7 @@ namespace Trader
         public static int Version;
 
 
-        public App(IConfiguration config, Processor processor, PostgresContext context )
+        public App(IConfiguration config, Processor processor, PostgresContext context)
         {
             _config = config;
             _processor = processor;
@@ -42,30 +42,16 @@ namespace Trader
 
             Console.ResetColor();
 
-          
+
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 10;
+            Version = 11;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
 
             // await TestSuite.TestLowSellAsync();
             // await TestSuite.TestLowBuyAsync();
-            var a  = new Arbitrage()
-            {
-                BotVersion = App.Version, 
-                BotRunId = App.RunId, 
-                BuyExchange = nameof (Coinmate), 
-                BuyWhenCreated = Helper.UnixTimeStampToDateTime(1612826743280)
-
-            };
-            _context.Arbitrages.Add(a);
-            await _context.SaveChangesAsync();
-             return;
-            
-
-            
-
+          
 
             long lastCycle = 0;
             while (true)
@@ -81,7 +67,7 @@ namespace Trader
 
                 var bob = await new BinanceLogic().GetOrderBookAsync("BTCEUR");
 
-              
+
                 var cob = await new CoinmateLogic().GetOrderBookAsync("BTC_EUR");
 
                 var db = bob.Union(cob);
@@ -167,7 +153,7 @@ namespace Trader
             Presenter.PrintOrderCandidate(oc);
 
 
-            if (Config.AutomatedTrading && oc.EstProfitNetRate > 1.29)
+            if (Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate)
             {
                 await _processor.ProcessOrderAsync(oc);
 

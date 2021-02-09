@@ -68,10 +68,10 @@ namespace Trader.PostgresDb
         public double? SellPrice { get; set; }
 
         [MaxLengthAttribute(50)]
-        public string? SellStatus { get; set; }
+        public string SellStatus { get; set; }
         
         [MaxLengthAttribute(50)]
-        public string? SellTimeInForce { get; set; }
+        public string SellTimeInForce { get; set; }
         public DateTime? SellTransactionTime { get; set; }
         
         [MaxLengthAttribute(50)]
