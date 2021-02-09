@@ -13,6 +13,7 @@ namespace Trader
     public class App
     {
         private readonly IConfiguration _config;
+        private readonly Processor _processor;
 
         private static int _dbRetries = 0;
 
@@ -20,9 +21,10 @@ namespace Trader
         public static int Version;
 
 
-        public App(IConfiguration config)
+        public App(IConfiguration config, Processor processor)
         {
             _config = config;
+            _processor = processor;
         }
 
         public async Task RunAsync()
@@ -34,6 +36,8 @@ namespace Trader
                 .CreateLogger();
 
             Console.ResetColor();
+
+          
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
             Version = 10;
@@ -62,16 +66,6 @@ namespace Trader
                 var cob = await new CoinmateLogic().GetOrderBookAsync("BTC_EUR");
 
                 var db = bob.Union(cob);
-
-
-                // if (Console.KeyAvailable)
-                // {
-                //     if (Console.ReadKey(true).Key == ConsoleKey.B)
-                //     {
-                //         await CandidateSelectionAsync();
-                //     }
-                // }
-
 
 
                 foreach (var bookItem1 in db.Where(p => !p.InPosition))
@@ -116,46 +110,7 @@ namespace Trader
 
         }
 
-        public static async Task CandidateSelectionAsync()
-        {
-            Console.WriteLine($"Please enter OCID:");
-            long offerCandidateId = 0;
-            try
-            {
-                offerCandidateId = long.Parse(Console.ReadLine());
-
-            }
-            catch (System.Exception)
-            {
-                return;
-            }
-            OrderCandidate orderCandidate = null;
-            if (InMemDatabase.Instance.OrderCandidates.TryGetValue(offerCandidateId, out orderCandidate) && orderCandidate != null)
-            {
-                Console.WriteLine($"Do you wish to process following order? ");
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Presenter.PrintOrderCandidate(orderCandidate);
-                Console.ResetColor();
-
-                Console.WriteLine($"(y = yes / n = no) ");
-
-
-                var process = Console.ReadLine();
-                if (process == "y")
-                {
-                    await Processor.ProcessOrderAsync(orderCandidate);
-                    Console.WriteLine("Press any key to continue ...");
-                    Console.ReadLine();
-                }
-                else
-                    Console.WriteLine("Process cancelled. Continue...");
-
-            }
-            else
-                Console.WriteLine($"OrderCandidate: {offerCandidateId} not found. Continue...");
-        }
-
-        private static async Task CreateOrderCandidateAsync(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
+        private async Task CreateOrderCandidateAsync(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
         {
             sell.InPosition = true;
             buy.InPosition = true;
@@ -193,9 +148,9 @@ namespace Trader
             Presenter.PrintOrderCandidate(oc);
 
 
-            if (Config.AutomatedTrading && oc.EstProfitNetRate > 1)
+            if (Config.AutomatedTrading && oc.EstProfitNetRate > 1.29)
             {
-                await Processor.ProcessOrderAsync(oc);
+                await _processor.ProcessOrderAsync(oc);
 
             }
 

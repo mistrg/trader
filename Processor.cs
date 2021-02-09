@@ -7,14 +7,19 @@ using Trader;
 using Trader.Binance;
 using Trader.Coinmate;
 using Trader.Sms;
+using Trader.PostgresDb;
 
-public static class Processor
+public class Processor
 {
+        private readonly PostgresContext _context;
 
+    public Processor(PostgresContext context)
+    {
+        _context = context;
+    }
+    private int buyTimeoutInMs = 2500;
 
-    private static int buyTimeoutInMs = 2500;
-
-    public static async Task ProcessOrderAsync(OrderCandidate orderCandidate)
+    public async Task ProcessOrderAsync(OrderCandidate orderCandidate)
     {
 
         if (!(orderCandidate.BuyExchange == nameof(Trader.Coinmate) && orderCandidate.SellExchange == nameof(Trader.Binance)))
@@ -35,7 +40,6 @@ public static class Processor
 
         }
 
-
         var sellResult = await SellMarketAsync(orderCandidate);
 
         if (!sellResult.Item1)
@@ -50,7 +54,7 @@ public static class Processor
 
     }
 
-    public static async Task<Tuple<bool, Order>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
+    public async Task<Tuple<bool, Order>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
     {
 
         if (!Config.ProcessTrades)
@@ -184,7 +188,7 @@ public static class Processor
         return new Tuple<bool, Order>(true, result);
 
     }
-    public static async Task<Tuple<bool, OrderResponse>> SellMarketAsync(OrderCandidate orderCandidate)
+    public async Task<Tuple<bool, OrderResponse>> SellMarketAsync(OrderCandidate orderCandidate)
     {
 
         if (!Config.ProcessTrades)

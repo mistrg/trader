@@ -1,9 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Trader.Infrastructure;
+using Trader.PostgresDb;
 
 namespace Trader
 {
@@ -12,12 +14,13 @@ namespace Trader
         static async Task Main(string[] args)
         {
 
+
             var services = ConfigureServices();
 
             var serviceProvider = services.BuildServiceProvider();
 
 
-                
+
             // calls the Run method in App, which is replacing Main
             await serviceProvider.GetService<App>().RunAsync();
         }
@@ -28,8 +31,15 @@ namespace Trader
 
             var config = LoadConfiguration();
             services.AddSingleton(config);
-    
-            
+
+
+
+          services.AddSingleton<Processor>();
+
+
+            services.AddEntityFrameworkNpgsql().AddDbContext<PostgresContext>(opt =>
+           opt.UseNpgsql(Config.PostgresConnectionString));
+
             // required to run the application
             services.AddTransient<App>();
 
