@@ -31,7 +31,8 @@ namespace Trader
         public double? askPrice { get; set; }
         public double? bidPrice { get; set; }
         public double amount { get; set; }
-        public bool InPosition { get; internal set; }
-        public string Exch { get; internal set; }
+        public bool InPosition { get; set; }
+        public string Exch { get; set; }
+        public string Side { get;  set; }
     }
 }

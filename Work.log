@@ -15,6 +15,8 @@ Work Log
 8.2.2021 Investigation of database, complete rewrite of the structure to support DI, config and logging
 9.2.2021 Trading polishing, rewrite of pairing engine => removing the bot slowdown
 10.2.2021 Get all transactions and orders
+11.2.2021 Fixed problems with duplicate order candidates [Version 12]
+
 
 TODO
 

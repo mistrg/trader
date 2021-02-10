@@ -25,6 +25,7 @@ namespace Trader
         public static int Version;
 
 
+
         public App(IConfiguration config, Processor processor, PostgresContext context)
         {
             _config = config;
@@ -36,7 +37,6 @@ namespace Trader
         {
             var logDirectory = _config.GetValue<string>("Runtime:LogOutputDirectory");
             var logger = new LoggerConfiguration()
-                .WriteTo.Console()
                 .WriteTo.File(logDirectory)
                 .CreateLogger();
 
@@ -45,13 +45,9 @@ namespace Trader
 
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 11;
+            Version = 12;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
-
-            // await TestSuite.TestLowSellAsync();
-            // await TestSuite.TestLowBuyAsync();
-          
 
             long lastCycle = 0;
             while (true)
@@ -65,17 +61,19 @@ namespace Trader
                 var timer = new Stopwatch();
                 timer.Start();
 
-                var bob = await new BinanceLogic().GetOrderBookAsync("BTCEUR");
+                await new BinanceLogic().GetOrderBookAsync("BTCEUR");
+                await new CoinmateLogic().GetOrderBookAsync("BTC_EUR");
 
 
-                var cob = await new CoinmateLogic().GetOrderBookAsync("BTC_EUR");
+                //Cleanup
+                var oversize = InMemDatabase.Instance.Items.Count - 2000;
+                if (oversize > 0)
+                    InMemDatabase.Instance.Items.RemoveRange(0,oversize);
 
-                var db = bob.Union(cob);
 
-
-                foreach (var bookItem1 in db.Where(p => !p.InPosition))
+                foreach (var bookItem1 in InMemDatabase.Instance.Items.Where(p => !p.InPosition))
                 {
-                    var bookItem2s = db.Where(bookItem2 => bookItem2.Exch != bookItem1.Exch && bookItem2.Pair == bookItem1.Pair && (bookItem1.askPrice < bookItem2.bidPrice) && !bookItem2.InPosition);
+                    var bookItem2s = InMemDatabase.Instance.Items.Where(bookItem2 => bookItem2.Exch != bookItem1.Exch && bookItem2.Pair == bookItem1.Pair && (bookItem1.askPrice < bookItem2.bidPrice) && !bookItem2.InPosition);
                     foreach (var bookItem2 in bookItem2s)
                     {
                         if (bookItem1.InPosition || bookItem2.InPosition)
@@ -99,6 +97,11 @@ namespace Trader
                         if (profitNetRate <= 0)
                             continue;
 
+
+                        bookItem1.InPosition = true;
+                        bookItem2.InPosition = true;
+
+
                         await CreateOrderCandidateAsync(bookItem1, bookItem2, minimalAmount, estProfitGross, estProfitNet, profitNetRate, estBuyFee, estSellFee);
 
                     }
@@ -117,13 +120,8 @@ namespace Trader
 
         private async Task CreateOrderCandidateAsync(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
         {
-            sell.InPosition = true;
-            buy.InPosition = true;
-
             var oc = new OrderCandidate()
             {
-                BuyId = buy.Id,
-                SellId = sell.Id,
                 WhenBuySpoted = buy.StartDate,
                 WhenSellSpoted = sell.StartDate,
                 BuyExchange = buy.Exch,
@@ -142,13 +140,6 @@ namespace Trader
                 BotVersion = Version,
                 BotRunId = RunId
             };
-            var isSuccess = InMemDatabase.Instance.OrderCandidates.TryAdd(oc.Id, oc);
-            if (!isSuccess)
-            {
-                Thread.Sleep(100);
-                InMemDatabase.Instance.OrderCandidates.TryAdd(oc.Id, oc);
-
-            }
 
             Presenter.PrintOrderCandidate(oc);
 

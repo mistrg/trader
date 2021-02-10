@@ -77,18 +77,23 @@ namespace Trader.Binance
         }
 
 
-        public async Task<List<DBItem>> GetOrderBookAsync(string pair)
+        public async Task GetOrderBookAsync(string pair)
         {
-            var result = new List<DBItem>();
             try
             {
                 var res = await httpClient.GetFromJsonAsync<BIResult>(baseUri + "depth?symbol=" + pair);
+
+
 
                 foreach (var x in res.asks)
                 {
                     var amount = double.Parse(x[1]);
                     var price = double.Parse(x[0]);
-                    result.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price });
+                    var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.Side == "SELL");
+                    if (dbEntry == null)
+                        InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price, Side = "SELL" });
+                    else
+                        dbEntry.askPrice = price;
                 }
 
 
@@ -97,15 +102,17 @@ namespace Trader.Binance
                     var amount = double.Parse(x[1]);
                     var price = double.Parse(x[0]);
 
-                        result.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price });
-                }
+                    var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.Side == "BUY");
+                    if (dbEntry == null)
+                        InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price, Side = "BUY" });
+                    else
+                        dbEntry.bidPrice = price;
 
-               
+                }
             }
             catch
             {
             }
-            return result;
         }
         public void ListenToOrderbook(CancellationToken stoppingToken)
         {

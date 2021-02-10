@@ -39,34 +39,37 @@ namespace Trader.Coinmate
             return shortPair;
         }
 
-        public async Task<List<DBItem>> GetOrderBookAsync(string pair)
+        public async Task GetOrderBookAsync(string pair)
         {
-            var spair = pair.Replace("_", "");
-            var result = new List<DBItem>();
+            var upair = pair.Replace("_", "");
             try
             {
                 var res = await httpClient.GetFromJsonAsync<OrderBookResponse>($"{baseUri}orderBook?currencyPair={pair}&groupByPriceLimit=False");
 
                 if (res.data == null)
-                    return result;
+                    return;
+
                 foreach (var x in res.data.asks)
                 {
-
-                    result.Add(new DBItem() { Exch = nameof(Coinmate), Pair = spair, amount = x.amount, askPrice = x.price });
+                    var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.Side == "SELL");
+                    if (dbEntry == null)
+                        InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price, Side = "SELL" });
+                    else
+                        dbEntry.askPrice = x.price;
                 }
-
 
                 foreach (var x in res.data.bids)
                 {
-                    result.Add(new DBItem() { Exch = nameof(Coinmate), Pair = spair, amount = x.amount, bidPrice = x.price });
+                    var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.Side == "BUY");
+                    if (dbEntry == null)
+                        InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price, Side = "BUY" });
+                    else
+                        dbEntry.bidPrice = x.price;
                 }
-
-
             }
             catch
             {
             }
-            return result;
         }
         public async Task<Order> GetOrderByOrderIdAsync(long orderId)
         {
@@ -103,9 +106,9 @@ namespace Trader.Coinmate
 
         }
 
-     public async Task GetTradeHistoryAsync()
+        public async Task GetTradeHistoryAsync()
         {
-             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -129,11 +132,11 @@ namespace Trader.Coinmate
 
             var resa = await result.Content.ReadAsStringAsync();
             Console.WriteLine(resa);
-            
+
         }
         public async Task GetTransactionHistoryAsync()
         {
-             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -157,7 +160,7 @@ namespace Trader.Coinmate
 
             var resa = await result.Content.ReadAsStringAsync();
             Console.WriteLine(resa);
-            
+
         }
 
 
@@ -280,7 +283,7 @@ namespace Trader.Coinmate
                 new KeyValuePair<string, string>("amount", string.Format("{0:0.##############}", amount)),
                 new KeyValuePair<string, string>("price", string.Format("{0:0.##############}", price)),
                 new KeyValuePair<string, string>("currencyPair", currencyPair),
-                new KeyValuePair<string, string>("immediateOrCancel", 1.ToString()),
+                new KeyValuePair<string, string>("immediateOrCancel", 0.ToString()),
                 new KeyValuePair<string, string>("clientOrderId", clientOrderId.ToString()),
 
             };

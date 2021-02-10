@@ -40,7 +40,7 @@ namespace Trader
             {
                 return;
             }
-            var collection = db.GetCollection<OrderCandidate>("OrderCandidates");
+            var collection = db.GetCollection<OrderCandidate>("OrderCandidatesV2");
 
             collection.InsertOne(obj);
 

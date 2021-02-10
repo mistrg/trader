@@ -22,8 +22,8 @@ public class TestSuite
         };
 
 
-       // var result = await _processor.BuyLimitOrderAsync(oc);
-        //Console.WriteLine($"Test TestLowBuyAsync result: {result}");
+       var result = await _processor.BuyLimitOrderAsync(oc, null);
+        Console.WriteLine($"Test TestLowBuyAsync result: {result}");
     }
 
     public async Task TestLowSellAsync()
@@ -37,8 +37,8 @@ public class TestSuite
         };
 
 
-        // var result = await _processor.SellMarketAsync(oc);
-        // Console.WriteLine($"Test TestLowSellAsync result: {result}");
+        var result = await _processor.SellMarketAsync(oc, null);
+        Console.WriteLine($"Test TestLowSellAsync result: {result}");
     }
 
 
