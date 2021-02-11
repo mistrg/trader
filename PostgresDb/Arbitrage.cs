@@ -8,7 +8,6 @@ namespace Trader.PostgresDb
 
     public class Arbitrage
     {
-        internal double SellCummulativeQuoteQty;
 
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -23,7 +22,7 @@ namespace Trader.PostgresDb
         public double EstBuyFee { get; set; }
 
         public double EstSellFee { get; set; }
-        
+
         [MaxLengthAttribute(100)]
         public string BotRunId { get; set; }
         public int BotVersion { get; set; }
@@ -69,11 +68,11 @@ namespace Trader.PostgresDb
 
         [MaxLengthAttribute(50)]
         public string SellStatus { get; set; }
-        
+
         [MaxLengthAttribute(50)]
         public string SellTimeInForce { get; set; }
         public DateTime? SellTransactionTime { get; set; }
-        
+
         [MaxLengthAttribute(50)]
         public string SellType { get; set; }
 
@@ -81,7 +80,9 @@ namespace Trader.PostgresDb
         public string SellClientOrderId { get; set; }
         public double? SellExecutedQty { get; set; }
         public long? SellOrderId { get; set; }
+        public double? SellCummulativeQuoteQty { get; set; }
 
-        public bool IsSuccess {get;set;}
+
+        public bool IsSuccess { get; set; }
     }
 }

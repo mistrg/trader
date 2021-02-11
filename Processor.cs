@@ -33,6 +33,8 @@ public class Processor
 
         var arbitrage = _context.MakeTradeObj(orderCandidate);
         _context.Arbitrages.Add(arbitrage);
+        
+        Console.WriteLine("Starting arbitrage...");
 
         var buyResult = await BuyLimitOrderAsync(orderCandidate, arbitrage);
 
@@ -55,7 +57,7 @@ public class Processor
 
         var successMessage = $"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Arbitrage success. OCID {orderCandidate.Id} estNetProfit {orderCandidate.EstProfitNet} realNetProfit {sellResult.Item2.cummulativeQuoteQtyNum - orderCandidate.TotalAskPrice}";
 
-        
+
 
         Presenter.ShowSuccess(successMessage);
         await sms.SendSmsAsync(successMessage);
@@ -63,6 +65,8 @@ public class Processor
         arbitrage.Comment = successMessage;
         arbitrage.IsSuccess = true;
         await _context.SaveChangesAsync();
+        Console.WriteLine("Ending arbitrage...");
+
 
 
 
@@ -139,7 +143,8 @@ public class Processor
             {
                 Thread.Sleep(100);
                 result = coinmateLogic.GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
-                _context.EnrichBuy(arbitrage, result);
+                if (result != null)
+                    _context.EnrichBuy(arbitrage, result);
             }
             catch (Exception ex)
             {

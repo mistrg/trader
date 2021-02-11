@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Trader.PostgresDb;
@@ -9,9 +10,10 @@ using Trader.PostgresDb;
 namespace Trader.Migrations
 {
     [DbContext(typeof(PostgresContext))]
-    partial class PostgresContextModelSnapshot : ModelSnapshot
+    [Migration("20210211002649_AddedSellCumulativeQuoteQty")]
+    partial class AddedSellCumulativeQuoteQty
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -92,9 +94,6 @@ namespace Trader.Migrations
                     b.Property<string>("SellClientOrderId")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
-
-                    b.Property<double?>("SellCummulativeQuoteQty")
-                        .HasColumnType("double precision");
 
                     b.Property<string>("SellExchange")
                         .HasMaxLength(50)
