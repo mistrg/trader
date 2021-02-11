@@ -84,5 +84,9 @@ namespace Trader.PostgresDb
 
 
         public bool IsSuccess { get; set; }
+        public double? SellNetPriceBi { get; set; }
+        public double? BuyNetPriceCm { get; set; }
+
+        public double? RealProfitNet { get; set; }
     }
 }

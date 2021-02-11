@@ -7,8 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Trader.Binance;
 using Trader.Coinmate;
-using Trader.Email;
-using Trader.Infrastructure;
 using Trader.PostgresDb;
 
 namespace Trader
@@ -48,17 +46,12 @@ namespace Trader
 
             Console.ResetColor();
 
-
-
-
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 12;
+            Version = 13;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
 
-
-
-
+         
             long lastCycle = 0;
             while (true)
             {
@@ -71,19 +64,15 @@ namespace Trader
                 var timer = new Stopwatch();
                 timer.Start();
 
-                await _binanceLogic.GetOrderBookAsync("BTCEUR");
-                await _coinmateLogic.GetOrderBookAsync("BTC_EUR");
+                var bob = await _binanceLogic.GetOrderBookAsync("BTCEUR");
+                var cob  = await _coinmateLogic.GetOrderBookAsync("BTC_EUR");
 
+                var db = bob.Union(cob);
+              
 
-                //Cleanup
-                var oversize = InMemDatabase.Instance.Items.Count - 2000;
-                if (oversize > 0)
-                    InMemDatabase.Instance.Items.RemoveRange(0, oversize);
-
-
-                foreach (var bookItem1 in InMemDatabase.Instance.Items.Where(p => !p.InPosition))
+                foreach (var bookItem1 in db.Where(p => !p.InPosition))
                 {
-                    var bookItem2s = InMemDatabase.Instance.Items.Where(bookItem2 => bookItem2.Exch != bookItem1.Exch && bookItem2.Pair == bookItem1.Pair && (bookItem1.askPrice < bookItem2.bidPrice) && !bookItem2.InPosition);
+                    var bookItem2s = db.Where(bookItem2 => bookItem2.Exch != bookItem1.Exch && bookItem2.Pair == bookItem1.Pair && (bookItem1.askPrice < bookItem2.bidPrice) && !bookItem2.InPosition);
                     foreach (var bookItem2 in bookItem2s)
                     {
                         if (bookItem1.InPosition || bookItem2.InPosition)
@@ -117,7 +106,6 @@ namespace Trader
                     }
                 }
 
-                //B: Run stuff you want timed
                 timer.Stop();
 
                 TimeSpan timeTaken = timer.Elapsed;
@@ -127,6 +115,9 @@ namespace Trader
 
 
         }
+
+        
+
 
         private async Task CreateOrderCandidateAsync(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
         {
@@ -150,17 +141,19 @@ namespace Trader
                 BotVersion = Version,
                 BotRunId = RunId
             };
-            
+
             _presenter.PrintOrderCandidate(oc);
-            if (Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate)
+
+            
+            var processOrder = Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate;
+            if (processOrder)
             {
                 await _processor.ProcessOrderAsync(oc);
-
             }
 
             try
             {
-                MongoDatabase.Instance.CreateOrderCandidate(oc);
+                MongoDatabase.Instance.CreateOrSkipOrderCandidate(oc, processOrder);
                 App._dbRetries = 0;
             }
             catch (System.Exception)
@@ -178,9 +171,6 @@ namespace Trader
                 Console.WriteLine($"Retrying Database write {App._dbRetries}/20");
                 MongoDatabase.Reset();
             }
-
-
-
         }
 
     }

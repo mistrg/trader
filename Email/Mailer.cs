@@ -8,7 +8,7 @@ namespace Trader.Email
 {
     public interface IMailer
     {
-        Task SendEmailAsync(string email, string subject, string body);
+        Task SendEmailAsync( string subject, string body);
     }
 
     public class Mailer : IMailer
@@ -20,13 +20,15 @@ namespace Trader.Email
             _smtpSettings = smtpSettings.Value;
         }
 
-        public async Task SendEmailAsync(string email, string subject, string body)
+        public async Task SendEmailAsync(string subject, string body)
         {
             try
             {
                 var message = new MimeMessage();
                 message.From.Add(new MailboxAddress(_smtpSettings.SenderName, _smtpSettings.SenderEmail));
-                message.To.Add(new MailboxAddress(email));
+
+                foreach (var email in _smtpSettings.To.Split(","))
+                    message.To.Add(new MailboxAddress(email));
                 message.Subject = subject;
                 message.Body = new TextPart("html")
                 {

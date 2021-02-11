@@ -8,6 +8,7 @@ using Trader.Binance;
 using Trader.Coinmate;
 using Trader.Sms;
 using Trader.PostgresDb;
+using System.Collections.Generic;
 
 public class Processor
 {
@@ -34,9 +35,10 @@ public class Processor
             return;
         }
 
-        var sms = new SmsLogic();
+        if (!await HasEnoughFundsAsync(orderCandidate))
+            return;
 
-        var arbitrage = _context.MakeTradeObj(orderCandidate);
+        var arbitrage = _context.MakeArbitrageObj(orderCandidate);
         _context.Arbitrages.Add(arbitrage);
 
         Console.WriteLine("Starting arbitrage...");
@@ -48,7 +50,7 @@ public class Processor
             if (buyResult.Item2?.status?.Contains("Access denied") == true)
                 return;
 
-            await sms.SendSmsAsync($"BuyLimitOrderAsync failed. Status: {buyResult.Item2?.status} Check OrderCandidate " + orderCandidate.Id);
+            await _presenter.SendMessageAsync($"Arbitrage failed","BuyLimitOrderAsync failed. Status: {buyResult.Item2?.status} Check OrderCandidate " + orderCandidate.Id, arbitrage);
             await _context.SaveChangesAsync();
             return;
 
@@ -58,25 +60,26 @@ public class Processor
 
         if (!sellResult.Item1)
         {
-            await sms.SendSmsAsync("SellMarketAsync failed. Check OrderCandidate " + orderCandidate.Id);
+            await _presenter.SendMessageAsync("Arbitrage failed","SellMarketAsync failed. Check OrderCandidate " + orderCandidate.Id,arbitrage);
             await _context.SaveChangesAsync();
             return;
         }
 
-        var successMessage = $"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Arbitrage success. OCID {orderCandidate.Id} estNetProfit {orderCandidate.EstProfitNet} realNetProfit {Math.Round(sellResult.Item2.cummulativeQuoteQtyNum - orderCandidate.TotalAskPrice, 2)}";
+   
+        
+        //BuyUnitPrice * (OrgiAmount  - RemainAmount)  - Check Trade
+        //var BuyNetPriceCm = buyResult.Item2.
 
 
+        var successMessage = $"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} Arbitrage success. OCID {orderCandidate.Id} estNetProfit {orderCandidate.EstProfitNet} RealProfitNet {Math.Round(arbitrage.RealProfitNet ?? 0, 2)}";
 
         _presenter.ShowSuccess(successMessage);
-        await sms.SendSmsAsync(successMessage);
+        await _presenter.SendMessageAsync("Arbitrage succeded",successMessage,arbitrage);
 
         arbitrage.Comment = successMessage;
         arbitrage.IsSuccess = true;
         await _context.SaveChangesAsync();
         Console.WriteLine("Ending arbitrage...");
-
-
-
 
     }
 
@@ -91,11 +94,6 @@ public class Processor
         }
 
         _presenter.PrintOrderCandidate(orderCandidate);
-
-
-
-
-
 
         BuyResponse buyResponse = null;
         try
@@ -254,10 +252,6 @@ public class Processor
 
 
         Console.WriteLine("Let's sell");
-        _presenter.PrintOrderCandidate(orderCandidate);
-
-
-
 
         OrderResponse result = null;
         try
@@ -292,6 +286,65 @@ public class Processor
         }
 
         return new Tuple<bool, OrderResponse>(result.status == "FILLED", result);
+    }
+
+    private async Task<bool> HasEnoughFundsAsync(OrderCandidate oc)
+    {
+        var isSuccess = false;
+        if (oc.SellExchange == nameof(Trader.Binance) && oc.Pair == "BTCEUR")
+        {
+            var biAccount = await _binanceLogic.GetAccountInformationAsync();
+            if (biAccount == null)
+            {
+                _presenter.ShowError("Binance account info not accessible");
+                return false;
+            }
+            var btcBalance = biAccount.balances.SingleOrDefault(p => p.asset == "BTC");
+
+            if (btcBalance == null)
+            {
+                _presenter.ShowError("Binance BTC balance not accessible");
+                return false;
+            }
+            isSuccess = btcBalance.freeNum > oc.Amount;
+            if (!isSuccess)
+            {
+                var message = $"Binance balance of {btcBalance.freeNum } BTC too low for trade (required {oc.Amount} BTC). Process cancel...";
+                _presenter.ShowError(message);
+                await _presenter.SendMessageAsync("Not enough ballance on Binance",message);
+            }
+
+        }
+
+        if (oc.BuyExchange == nameof(Trader.Coinmate) && oc.Pair == "BTCEUR")
+        {
+
+            var cmAccount = await _coinmateLogic.GetBalancesAsync();
+            if (cmAccount?.data == null)
+            {
+                _presenter.ShowError("Coinmate account info not accessible");
+                return false;
+            }
+            var euro = cmAccount.data.SingleOrDefault(p => p.Key == "EUR");
+
+            if (euro.Equals(default(KeyValuePair<string, BalanceResponse>)) || euro.Key == null)
+            {
+                _presenter.ShowError("Coinmate Euro balance not accessible");
+                return false;
+            }
+
+            isSuccess = euro.Value?.balance >= (oc.Amount * oc.UnitAskPrice);
+            if (!isSuccess)
+            {
+                var message = $"Coinmate balance of {euro.Value?.balance } EURO too low for trade (required {(oc.Amount * oc.UnitAskPrice)} EURO). Process cancel...";
+                _presenter.ShowError(message);
+                await _presenter.SendMessageAsync("Not enough ballance on Coinmate",message);
+            }
+
+        }
+
+        return isSuccess;
+
     }
 }
 

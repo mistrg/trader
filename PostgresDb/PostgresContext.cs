@@ -25,9 +25,9 @@ namespace Trader.PostgresDb
         }
         public DbSet<Arbitrage> Arbitrages { get; set; }
 
-        internal Arbitrage MakeTradeObj(OrderCandidate orderCandidate)
+        internal Arbitrage MakeArbitrageObj(OrderCandidate orderCandidate)
         {
-            var trade = new Arbitrage()
+            var arbitrage = new Arbitrage()
             {
                 BotRunId = App.RunId,
                 BotVersion = App.Version,
@@ -41,44 +41,57 @@ namespace Trader.PostgresDb
                 Ocid = orderCandidate.Id,
                 Pair = orderCandidate.Pair
             };
-            return trade;
+            return arbitrage;
 
         }
 
-        internal void EnrichBuy(Arbitrage trade, Order result)
+        internal void EnrichBuy(Arbitrage arbitrage, Order result)
         {
-            if (result != null && trade != null)
+            if (result != null && arbitrage != null)
             {
-                trade.BuyOrderId = result.id;
-                trade.BuyOrginalAmount = result.originalAmount;
-                trade.BuyRemainingAmount = result.remainingAmount;
-                trade.BuyType = result.orderTradeType;
-                trade.BuyStatus = result.status;
-                trade.BuyUnitPrice = result.price;
-                
-                trade.BuyWhenCreated = Helper.UnixTimeStampToDateTime(result.timestamp);
+                arbitrage.BuyOrderId = result.id;
+                arbitrage.BuyOrginalAmount = result.originalAmount;
+                arbitrage.BuyRemainingAmount = result.remainingAmount;
+                arbitrage.BuyType = result.orderTradeType;
+                arbitrage.BuyStatus = result.status;
+                arbitrage.BuyUnitPrice = result.price;
+
+                arbitrage.BuyWhenCreated = Helper.UnixTimeStampToDateTime(result.timestamp);
+
+
+                arbitrage.BuyNetPriceCm = arbitrage.BuyUnitPrice * (arbitrage.BuyOrginalAmount - arbitrage.BuyRemainingAmount); // mozna - poplatky
             }
 
 
         }
 
-        internal void EnrichSell(Arbitrage trade, OrderResponse result)
+        internal void EnrichSell(Arbitrage arbitrage, OrderResponse result)
         {
-            if (result != null && trade != null)
+            if (result != null && arbitrage != null)
             {
-                trade.SellOrigQty = result.origQtyNum;
-                trade.SellOrderListId = result.orderListId;
+                arbitrage.SellOrigQty = result.origQtyNum;
+                arbitrage.SellOrderListId = result.orderListId;
 
-                trade.SellPrice = result.priceNum;
+                arbitrage.SellPrice = result.priceNum;
 
-                trade.SellStatus = result.status;
-                trade.SellTimeInForce = result.timeInForce;
-                trade.SellTransactionTime = Helper.UnixTimeStampToDateTime(result.transactTime);
-                trade.SellType = result.type;
-                trade.SellClientOrderId = result.clientOrderId;
-                trade.SellCummulativeQuoteQty = result.cummulativeQuoteQtyNum;
-                trade.SellExecutedQty = result.executedQtyNum;
-                trade.SellOrderId = result.orderId;
+                arbitrage.SellStatus = result.status;
+                arbitrage.SellTimeInForce = result.timeInForce;
+                arbitrage.SellTransactionTime = Helper.UnixTimeStampToDateTime(result.transactTime);
+                arbitrage.SellType = result.type;
+                arbitrage.SellClientOrderId = result.clientOrderId;
+                arbitrage.SellCummulativeQuoteQty = result.cummulativeQuoteQtyNum;
+                arbitrage.SellExecutedQty = result.executedQtyNum;
+                arbitrage.SellOrderId = result.orderId;
+
+
+
+
+                //SellPriceNetBi SELECT 19.51052363 -  (19.51052363 * 0.001) = 19.49101310637   a."Ocid" = 637486012391027239
+                arbitrage.SellNetPriceBi = result.cummulativeQuoteQtyNum - (result.cummulativeQuoteQtyNum * 0.001);
+
+
+                arbitrage.RealProfitNet =  arbitrage.SellNetPriceBi - arbitrage.BuyNetPriceCm;
+
             }
         }
     }

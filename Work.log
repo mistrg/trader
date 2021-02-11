@@ -20,20 +20,18 @@ Work Log
 
 
 TODO
-TECH Why some trades from 11.2. ended in open position => bot crash + minimum amount
-TECH Why order candidates  from 11.2. were too positive  => wrong timing
-Zeptat se honzy jak prisel na 50 Euro
+x TECH Why some trades from 11.2. ended in open position => bot crash + minimum amount
+x TECH Why order candidates  from 11.2. were too positive  => wrong timing
 
 
-TECH One cycle decission BUY / NO BUY
-TECH Write more helpful data to database (profit, ...)
-TECH Implement email solution 
 
-TECH verify that we have enough crypto on sell exchanges every time before transactions (verifing the platform is working)
-TECH verify that we have enough euro on buy exchange (verifing the platform is working)
+x TECH One cycle decission BUY / NO BUY
+x TECH Implement email solution 
 
+x TECH verify that we have enough crypto on sell exchanges every time before transactions (verifing the platform is working)
+x TECH verify that we have enough euro on buy exchange (verifing the platform is working)
 
-TECH write trades to relation database
+x TECH write trades to relation database
 TECH get order and transactions from binance and coinmate
 TECH add logging framework to protocol all htttp requests
 

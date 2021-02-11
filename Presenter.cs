@@ -1,8 +1,10 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Trader.Email;
+using Trader.PostgresDb;
 
 namespace Trader
 {
@@ -15,11 +17,38 @@ namespace Trader
         public Presenter(IMailer mailer)
         {
             _mailer = mailer;
-            
+
         }
-        public async Task  SendMessageAsync(string message)
+        public async Task SendMessageAsync(string subject, string message, Arbitrage arbitrage = null)
         {
-            await _mailer.SendEmailAsync("zdenek@drbalek.de", "Drbor Report", message);
+            message = "<h2>" + message + "</h2>";
+            if (arbitrage != null)
+            {
+
+                message += " <br/><br/><p>Arbitrage detail</p>";
+                message += " <table  border=\"1\" >";
+
+
+                try
+                {
+                    PropertyInfo[] properties = typeof(Arbitrage).GetProperties();
+                    foreach (PropertyInfo property in properties)
+                    {
+                        message += $"<tr><td><strong>{property.Name}</strong></td><td>{property.GetValue(arbitrage)}</td></tr>";
+                    }
+                }
+                catch (System.Exception)
+                {
+
+                }
+                message += " </table>";
+
+
+
+            }
+
+
+            await _mailer.SendEmailAsync(subject, message);
 
         }
 

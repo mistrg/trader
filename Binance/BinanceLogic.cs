@@ -25,6 +25,46 @@ namespace Trader.Binance
         static string baseUri = "https://api.binance.com/api/v3/";
         private static readonly HttpClient httpClient = new HttpClient();
 
+        public async Task<AccountInfo> GetAccountInformationAsync()
+        {
+            var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() * 1000;
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("timestamp", timestamp.ToString()),
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+            var urlEncodedString = await content.ReadAsStringAsync();
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+
+
+            pairs.Add(new KeyValuePair<string, string>("signature", hashHMACHex));
+            var finalContent = new FormUrlEncodedContent(pairs);
+
+
+            var url = baseUri + "account?" + await finalContent.ReadAsStringAsync();
+
+            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+            var result = await httpClient.GetAsync(url);
+
+
+
+            if (!result.IsSuccessStatusCode)
+            {
+                var str = await result.Content.ReadAsStringAsync();
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+            }
+
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<AccountInfo>(stream);
+                return res;
+            }
+        }
 
         public async Task<OrderResponse> SellMarketAsync(OrderCandidate orderCandidate)
         {
@@ -79,23 +119,22 @@ namespace Trader.Binance
         }
 
 
-        public async Task GetOrderBookAsync(string pair)
+        public async Task<List<DBItem>> GetOrderBookAsync(string pair)
         {
+            var result = new List<DBItem>();
             try
             {
                 var res = await httpClient.GetFromJsonAsync<BIResult>(baseUri + "depth?symbol=" + pair);
 
+                if (res == null)
+                    return result;
 
 
                 foreach (var x in res.asks)
                 {
                     var amount = double.Parse(x[1]);
                     var price = double.Parse(x[0]);
-                    var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.Side == "SELL");
-                    if (dbEntry == null)
-                        InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price, Side = "SELL" });
-                    else
-                        dbEntry.askPrice = price;
+                    result.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price });
                 }
 
 
@@ -104,17 +143,14 @@ namespace Trader.Binance
                     var amount = double.Parse(x[1]);
                     var price = double.Parse(x[0]);
 
-                    var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.Side == "BUY");
-                    if (dbEntry == null)
-                        InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price, Side = "BUY" });
-                    else
-                        dbEntry.bidPrice = price;
+                    result.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price });
 
                 }
             }
             catch
             {
             }
+            return result;
         }
         public void ListenToOrderbook(CancellationToken stoppingToken)
         {

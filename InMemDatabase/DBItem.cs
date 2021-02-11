@@ -9,11 +9,7 @@ namespace Trader
         public DBItem()
         {
             StartDate = DateTime.Now;
-            Id = Guid.NewGuid();
         }
-
-        public Guid Id { get; set; }
-
         public string Pair { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime? EndDate { get; set; }
@@ -33,6 +29,5 @@ namespace Trader
         public double amount { get; set; }
         public bool InPosition { get; set; }
         public string Exch { get; set; }
-        public string Side { get;  set; }
     }
 }

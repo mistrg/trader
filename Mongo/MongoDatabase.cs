@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Text.Json;
 using System.Threading;
 using MongoDB.Driver;
+using System.Linq;
 
 namespace Trader
 {
@@ -16,6 +18,9 @@ namespace Trader
 
         private static MongoDatabase instance = null;
         private static readonly object padlock = new object();
+
+
+        private List<OrderCandidate> last2000OrderCandidates = new List<OrderCandidate>();
 
         MongoDatabase()
         {
@@ -34,12 +39,26 @@ namespace Trader
 
 
 
-        public void CreateOrderCandidate(OrderCandidate obj)
+        public void CreateOrSkipOrderCandidate(OrderCandidate obj, bool orderProcessed)
         {
             if (!Config.WriteToMongo)
             {
                 return;
             }
+
+            if (!orderProcessed && last2000OrderCandidates.Any(p => p.BuyExchange == obj.BuyExchange && p.SellExchange == obj.SellExchange && p.Pair == obj.Pair && p.Amount == obj.Amount))
+            {
+                //Duplicate offer 
+                return;
+            }
+
+            last2000OrderCandidates.Add(obj);
+
+            var oversize = last2000OrderCandidates.Count - 2000;
+            if (oversize > 0)
+                last2000OrderCandidates.RemoveRange(0, oversize);
+
+
             var collection = db.GetCollection<OrderCandidate>("OrderCandidatesV2");
 
             collection.InsertOne(obj);

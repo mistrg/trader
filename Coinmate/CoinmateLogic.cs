@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Trader.Infrastructure;
 
+
 namespace Trader.Coinmate
 {
 
@@ -41,37 +42,68 @@ namespace Trader.Coinmate
             return shortPair;
         }
 
-        public async Task GetOrderBookAsync(string pair)
+        public async Task<BalanceResponse> GetBalancesAsync()
         {
+
+            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+                new KeyValuePair<string, string>("nonce", nonce.ToString()),
+                new KeyValuePair<string, string>("signature", hashHMACHex),
+
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+
+            var result = await httpClient.PostAsync(baseUri + "balances", content);
+
+            if (!result.IsSuccessStatusCode)
+            {
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+
+            }
+            Console.WriteLine(await result.Content.ReadAsStringAsync());
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<BalanceResponse>(stream);
+                return res;
+            }
+
+        }
+
+        public async Task<List<DBItem>> GetOrderBookAsync(string pair)
+        {
+            var result = new List<DBItem>();
             var upair = pair.Replace("_", "");
             try
             {
                 var res = await httpClient.GetFromJsonAsync<OrderBookResponse>($"{baseUri}orderBook?currencyPair={pair}&groupByPriceLimit=False");
 
-                if (res.data == null)
-                    return;
+                if (res?.data == null)
+                    return result;
 
                 foreach (var x in res.data.asks)
                 {
-                    var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.Side == "SELL");
-                    if (dbEntry == null)
-                        InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price, Side = "SELL" });
-                    else
-                        dbEntry.askPrice = x.price;
+                    result.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price });
                 }
 
                 foreach (var x in res.data.bids)
                 {
-                    var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.Side == "BUY");
-                    if (dbEntry == null)
-                        InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price, Side = "BUY" });
-                    else
-                        dbEntry.bidPrice = x.price;
+                    result.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
                 }
             }
             catch
             {
             }
+            return result;
         }
         public async Task<Order> GetOrderByOrderIdAsync(long orderId)
         {
@@ -96,9 +128,11 @@ namespace Trader.Coinmate
             var result = await httpClient.PostAsync(baseUri + "orderById", content);
 
             if (!result.IsSuccessStatusCode)
+            {
                 _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
-            Console.WriteLine(await result.Content.ReadAsStringAsync());
+                Console.WriteLine(await result.Content.ReadAsStringAsync());
+            }
 
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
@@ -130,6 +164,7 @@ namespace Trader.Coinmate
             var result = await httpClient.PostAsync(baseUri + "tradeHistory", content);
 
             if (!result.IsSuccessStatusCode)
+
                 _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             var resa = await result.Content.ReadAsStringAsync();
