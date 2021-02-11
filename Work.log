@@ -15,16 +15,28 @@ Work Log
 8.2.2021 Investigation of database, complete rewrite of the structure to support DI, config and logging
 9.2.2021 Trading polishing, rewrite of pairing engine => removing the bot slowdown
 10.2.2021 Get all transactions and orders
-11.2.2021 Fixed problems with duplicate order candidates [Version 12]
+11.2.2021 Fixed problems with duplicate order candidates [Version 12], problem resolutions, 
+
 
 
 TODO
+TECH Why some trades from 11.2. ended in open position => bot crash + minimum amount
+TECH Why order candidates  from 11.2. were too positive  => wrong timing
+Zeptat se honzy jak prisel na 50 Euro
+
+
+TECH One cycle decission BUY / NO BUY
+TECH Write more helpful data to database (profit, ...)
+TECH Implement email solution 
+
+TECH verify that we have enough crypto on sell exchanges every time before transactions (verifing the platform is working)
+TECH verify that we have enough euro on buy exchange (verifing the platform is working)
+
 
 TECH write trades to relation database
 TECH get order and transactions from binance and coinmate
 TECH add logging framework to protocol all htttp requests
-TECH verify that we have enough crypto on sell exchanges
-TECH verify that we have enough euro on buy exchange
+
 
 
 

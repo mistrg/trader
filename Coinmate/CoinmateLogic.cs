@@ -18,6 +18,7 @@ namespace Trader.Coinmate
     {
         private static readonly HttpClient httpClient = new HttpClient();
 
+        private readonly Presenter _presenter;
 
         private string uri = "wss://coinmate.io/api/websocket/channel/order-book/";
         private string baseUri = "https://coinmate.io/api/";
@@ -26,9 +27,10 @@ namespace Trader.Coinmate
         public List<string> Pairs { get; }
 
 
-        public CoinmateLogic()
+        public CoinmateLogic(Presenter presenter)
         {
             Pairs = new List<string>() { "BTC_EUR" };
+            _presenter = presenter;
         }
         public string GetLongPair(string shortPair)
         {
@@ -94,7 +96,7 @@ namespace Trader.Coinmate
             var result = await httpClient.PostAsync(baseUri + "orderById", content);
 
             if (!result.IsSuccessStatusCode)
-                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             Console.WriteLine(await result.Content.ReadAsStringAsync());
 
@@ -128,7 +130,7 @@ namespace Trader.Coinmate
             var result = await httpClient.PostAsync(baseUri + "tradeHistory", content);
 
             if (!result.IsSuccessStatusCode)
-                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             var resa = await result.Content.ReadAsStringAsync();
             Console.WriteLine(resa);
@@ -156,7 +158,7 @@ namespace Trader.Coinmate
             var result = await httpClient.PostAsync(baseUri + "transactionHistory", content);
 
             if (!result.IsSuccessStatusCode)
-                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             var resa = await result.Content.ReadAsStringAsync();
             Console.WriteLine(resa);
@@ -187,7 +189,7 @@ namespace Trader.Coinmate
             var result = await httpClient.PostAsync(baseUri + "orderHistory", content);
 
             if (!result.IsSuccessStatusCode)
-                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             var resa = await result.Content.ReadAsStringAsync();
             Console.WriteLine(resa);
@@ -222,7 +224,7 @@ namespace Trader.Coinmate
             var result = await httpClient.PostAsync(baseUri + "cancelOrder", content);
 
             if (!result.IsSuccessStatusCode)
-                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
 
             using (var stream = await result.Content.ReadAsStreamAsync())
@@ -254,7 +256,7 @@ namespace Trader.Coinmate
 
             var result = await httpClient.PostAsync(baseUri + "buyInstant", content);
             if (!result.IsSuccessStatusCode)
-                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
 
             using (var stream = await result.Content.ReadAsStreamAsync())
@@ -283,7 +285,7 @@ namespace Trader.Coinmate
                 new KeyValuePair<string, string>("amount", string.Format("{0:0.##############}", amount)),
                 new KeyValuePair<string, string>("price", string.Format("{0:0.##############}", price)),
                 new KeyValuePair<string, string>("currencyPair", currencyPair),
-                new KeyValuePair<string, string>("immediateOrCancel", 0.ToString()),
+                new KeyValuePair<string, string>("immediateOrCancel", 1.ToString()),
                 new KeyValuePair<string, string>("clientOrderId", clientOrderId.ToString()),
 
             };
@@ -293,7 +295,7 @@ namespace Trader.Coinmate
             var result = await httpClient.PostAsync(baseUri + "buyLimit", content);
 
             if (!result.IsSuccessStatusCode)
-                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             using (var stream = await result.Content.ReadAsStreamAsync())
             {

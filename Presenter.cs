@@ -1,45 +1,47 @@
 using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using Trader.Email;
 
 namespace Trader
 {
-    public static class Presenter
+    public class Presenter
     {
 
-        public static void PrintOrderCandidate(OrderCandidate oc)
+
+        private readonly IMailer _mailer;
+
+        public Presenter(IMailer mailer)
         {
-            //Console.ResetColor();
+            _mailer = mailer;
             
-            // if (oc.EstProfitNetRate > 1.5)
-            //     Console.ForegroundColor = ConsoleColor.DarkGreen;
-            // else if (oc.EstProfitNetRate > 0.5)
-            //     Console.ForegroundColor = ConsoleColor.DarkYellow;
-            // else
-            //     Console.ForegroundColor = ConsoleColor.Red;
-
-            Console.WriteLine($"{oc.WhenCreated.ToString("dd.MM.yyyy HH:mm:ss")} OCID: {oc.Id} Buy {oc.Amount} {oc.Pair.Substring(0, 3)} on {oc.BuyExchange} for {oc.TotalAskPrice} {oc.Pair.Substring(3, 3)} and sell on {oc.SellExchange} for {oc.TotalBidPrice} {oc.Pair.Substring(3, 3)} and make estNetProfit {oc.EstProfitNet} {oc.Pair.Substring(3, 3)} estSellfee {oc.EstSellFee} estProfitNetRate {oc.EstProfitNetRate}%");
-
-
-
-            // Console.WriteLine($" ");
-             //Console.ResetColor();
+        }
+        public async Task  SendMessageAsync(string message)
+        {
+            await _mailer.SendEmailAsync("zdenek@drbalek.de", "Drbor Report", message);
 
         }
-        public static void ShowPanic(string error)
+
+        public void PrintOrderCandidate(OrderCandidate oc)
+        {
+            Console.WriteLine($"{oc.WhenCreated.ToString("dd.MM.yyyy HH:mm:ss")} OCID: {oc.Id} Buy {oc.Amount} {oc.Pair.Substring(0, 3)} on {oc.BuyExchange} for {oc.TotalAskPrice} {oc.Pair.Substring(3, 3)} and sell on {oc.SellExchange} for {oc.TotalBidPrice} {oc.Pair.Substring(3, 3)} and make estNetProfit {oc.EstProfitNet} {oc.Pair.Substring(3, 3)} estSellfee {oc.EstSellFee} estProfitNetRate {oc.EstProfitNetRate}%");
+
+        }
+        public void ShowPanic(string error)
         {
             Console.ForegroundColor = ConsoleColor.DarkMagenta;
             Console.WriteLine(error);
             Console.ResetColor();
         }
-        public static void ShowError(string error)
+        public void ShowError(string error)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine(error);
             Console.ResetColor();
         }
 
-        public static void Warning(string warning)
+        public void Warning(string warning)
         {
 
             Console.ForegroundColor = ConsoleColor.DarkYellow;
@@ -47,7 +49,7 @@ namespace Trader
             Console.ResetColor();
         }
 
-        internal static void ShowSuccess(string successMessage)
+        internal void ShowSuccess(string successMessage)
         {
             Console.ForegroundColor = ConsoleColor.DarkGreen;
             Console.WriteLine(successMessage);

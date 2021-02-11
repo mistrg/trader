@@ -34,26 +34,26 @@ namespace Trader.Sms
 
             var content = new FormUrlEncodedContent(pairs);
 
-            try
-            {
-                var result = await httpClient.PostAsync(baseUri + "sms", content);
+            // try
+            // {
+            //     var result = await httpClient.PostAsync(baseUri + "sms", content);
 
-                if (!result.IsSuccessStatusCode)
-                {
-                    var str = await result.Content.ReadAsStringAsync();
-                    Presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
-                }
+            //     if (!result.IsSuccessStatusCode)
+            //     {
+            //         var str = await result.Content.ReadAsStringAsync();
+            //         Presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+            //     }
 
 
-                var errorCode = await result.Content.ReadAsStringAsync();
-                if (errorCode != "100")
-                    Presenter.ShowError($"SMS77 failed with error code {errorCode}");
+            //     var errorCode = await result.Content.ReadAsStringAsync();
+            //     if (errorCode != "100")
+            //         Presenter.ShowError($"SMS77 failed with error code {errorCode}");
 
-            }
-            catch (System.Exception ex)
-            {
-                Presenter.ShowError($"SMS77 failed with error message {ex}");
-            }
+            // }
+            // catch (System.Exception ex)
+            // {
+            //     Presenter.ShowError($"SMS77 failed with error message {ex}");
+            // }
 
 
         }

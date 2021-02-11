@@ -26,7 +26,7 @@ namespace Trader
             }
             else
             {
-                Presenter.Warning("CreateOrderCandidate skipped. WriteToMongo is not activated");
+                Console.WriteLine("CreateOrderCandidate skipped. WriteToMongo is not activated");
 
             }
 

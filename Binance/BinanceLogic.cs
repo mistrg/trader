@@ -15,9 +15,11 @@ namespace Trader.Binance
     {
         public List<string> Pairs { get; }
 
+        private readonly Presenter _presenter;
 
-        public BinanceLogic()
+        public BinanceLogic(Presenter presenter)
         {
+            _presenter = presenter;
             Pairs = new List<string>() { "BTCEUR" };
         }
         static string baseUri = "https://api.binance.com/api/v3/";
@@ -65,7 +67,7 @@ namespace Trader.Binance
             if (!result.IsSuccessStatusCode)
             {
                 var str = await result.Content.ReadAsStringAsync();
-                Presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
             }
 
 

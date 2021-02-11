@@ -23,12 +23,12 @@ public static class Config
     public static bool WriteToMongo { get { return true; } }
 
 
-    public static bool AutomatedTrading { get { return true; } }
+    public static bool AutomatedTrading { get { return false; } }
     public static double AutomatedTradingMinEstimatedProfitNetRate { get { return 0.75; } }
 
     
 
-    public static bool ProcessTrades { get { return true; } }
+    public static bool ProcessTrades { get { return false; } }
 
 
 }

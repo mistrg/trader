@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Trader.Binance;
 using Trader.Coinmate;
+using Trader.Email;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
@@ -17,7 +18,9 @@ namespace Trader
         private readonly IConfiguration _config;
         private readonly Processor _processor;
         private readonly PostgresContext _context;
-
+        private readonly CoinmateLogic _coinmateLogic;
+        private readonly BinanceLogic _binanceLogic;
+        private readonly Presenter _presenter;
 
         private static int _dbRetries = 0;
 
@@ -26,11 +29,14 @@ namespace Trader
 
 
 
-        public App(IConfiguration config, Processor processor, PostgresContext context)
+        public App(IConfiguration config, Processor processor, PostgresContext context, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter)
         {
             _config = config;
             _processor = processor;
             _context = context;
+            _coinmateLogic = coinmateLogic;
+            _binanceLogic = binanceLogic;
+            _presenter = presenter;
         }
 
         public async Task RunAsync()
@@ -44,10 +50,14 @@ namespace Trader
 
 
 
+
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
             Version = 12;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
+
+
+
 
             long lastCycle = 0;
             while (true)
@@ -61,14 +71,14 @@ namespace Trader
                 var timer = new Stopwatch();
                 timer.Start();
 
-                await new BinanceLogic().GetOrderBookAsync("BTCEUR");
-                await new CoinmateLogic().GetOrderBookAsync("BTC_EUR");
+                await _binanceLogic.GetOrderBookAsync("BTCEUR");
+                await _coinmateLogic.GetOrderBookAsync("BTC_EUR");
 
 
                 //Cleanup
                 var oversize = InMemDatabase.Instance.Items.Count - 2000;
                 if (oversize > 0)
-                    InMemDatabase.Instance.Items.RemoveRange(0,oversize);
+                    InMemDatabase.Instance.Items.RemoveRange(0, oversize);
 
 
                 foreach (var bookItem1 in InMemDatabase.Instance.Items.Where(p => !p.InPosition))
@@ -140,10 +150,8 @@ namespace Trader
                 BotVersion = Version,
                 BotRunId = RunId
             };
-
-            Presenter.PrintOrderCandidate(oc);
-
-
+            
+            _presenter.PrintOrderCandidate(oc);
             if (Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate)
             {
                 await _processor.ProcessOrderAsync(oc);

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Trader.Email;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
@@ -13,15 +14,9 @@ namespace Trader
     {
         static async Task Main(string[] args)
         {
-
-
             var services = ConfigureServices();
-
             var serviceProvider = services.BuildServiceProvider();
 
-
-
-            // calls the Run method in App, which is replacing Main
             await serviceProvider.GetService<App>().RunAsync();
         }
 
@@ -32,9 +27,15 @@ namespace Trader
             var config = LoadConfiguration();
             services.AddSingleton(config);
 
+            var x = config.GetSection("SmtpSettings");
 
+            services.Configure<SmtpSettings>(setting => x.Bind(setting));
+            services.AddSingleton<IMailer, Mailer>();
 
-          services.AddSingleton<Processor>();
+            services.AddSingleton<Processor>();
+            services.AddSingleton<Presenter>();
+            services.AddSingleton<Coinmate.CoinmateLogic>();
+            services.AddSingleton<Binance.BinanceLogic>();
 
 
             services.AddEntityFrameworkNpgsql().AddDbContext<PostgresContext>(opt =>
