@@ -47,33 +47,39 @@ namespace Trader.PostgresDb
 
         internal void EnrichBuy(Arbitrage trade, Order result)
         {
-            trade.BuyOrderId = result.id;
-            trade.BuyOrginalAmount = result.originalAmount;
-            trade.BuyRemainingAmount = result.remainingAmount;
-            trade.BuyType = result.orderTradeType;
-            trade.BuyStatus = result.status;
-            trade.BuyUnitPrice = result.price;
-            trade.BuyWhenCreated = Helper.UnixTimeStampToDateTime(result.timestamp);
+            if (result != null && trade != null)
+            {
+                trade.BuyOrderId = result.id;
+                trade.BuyOrginalAmount = result.originalAmount;
+                trade.BuyRemainingAmount = result.remainingAmount;
+                trade.BuyType = result.orderTradeType;
+                trade.BuyStatus = result.status;
+                trade.BuyUnitPrice = result.price;
+                
+                trade.BuyWhenCreated = Helper.UnixTimeStampToDateTime(result.timestamp);
+            }
 
 
         }
 
         internal void EnrichSell(Arbitrage trade, OrderResponse result)
         {
-            trade.SellOrigQty = result.origQtyNum;
-            trade.SellOrderListId = result.orderListId;
+            if (result != null && trade != null)
+            {
+                trade.SellOrigQty = result.origQtyNum;
+                trade.SellOrderListId = result.orderListId;
 
-            trade.SellPrice = result.priceNum;
+                trade.SellPrice = result.priceNum;
 
-            trade.SellStatus = result.status;
-            trade.SellTimeInForce = result.timeInForce;
-            trade.SellTransactionTime = Helper.UnixTimeStampToDateTime(result.transactTime);
-            trade.SellType = result.type;
-            trade.SellClientOrderId = result.clientOrderId;
-            trade.SellCummulativeQuoteQty = result.cummulativeQuoteQtyNum;
-            trade.SellExecutedQty = result.executedQtyNum;
-            trade.SellOrderId = result.orderId;
-
+                trade.SellStatus = result.status;
+                trade.SellTimeInForce = result.timeInForce;
+                trade.SellTransactionTime = Helper.UnixTimeStampToDateTime(result.transactTime);
+                trade.SellType = result.type;
+                trade.SellClientOrderId = result.clientOrderId;
+                trade.SellCummulativeQuoteQty = result.cummulativeQuoteQtyNum;
+                trade.SellExecutedQty = result.executedQtyNum;
+                trade.SellOrderId = result.orderId;
+            }
         }
     }
 }
