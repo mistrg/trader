@@ -66,6 +66,26 @@ namespace Trader.Binance
             }
         }
 
+        public async Task<double> GetFreeBtcFundsAsync()
+        {
+             var biAccount = await GetAccountInformationAsync();
+            if (biAccount == null)
+            {
+                _presenter.ShowError("Binance account info not accessible");
+                return 0;
+            }
+            var btcBalance = biAccount.balances.SingleOrDefault(p => p.asset == "BTC");
+
+            if (btcBalance == null)
+            {
+                _presenter.ShowError("Binance BTC balance not accessible");
+                return 0;
+            }
+            
+            return btcBalance.freeNum;
+            
+        }
+
         public async Task<OrderResponse> SellMarketAsync(OrderCandidate orderCandidate)
         {
 

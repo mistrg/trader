@@ -51,7 +51,17 @@ namespace Trader
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
 
-         
+            // var biAccount = await _binanceLogic.GetAccountInformationAsync();
+            // var btcBalance = biAccount.balances.SingleOrDefault(p => p.asset == "BTC");
+            // Console.WriteLine(btcBalance.freeNum);
+
+
+
+            // var cmAccount = await _coinmateLogic.GetBalancesAsync();
+            // var euro = cmAccount.data.SingleOrDefault(p => p.Key == "EUR");
+
+            // Console.WriteLine(euro.Value?.balance);
+            // return;
             long lastCycle = 0;
             while (true)
             {
@@ -65,10 +75,10 @@ namespace Trader
                 timer.Start();
 
                 var bob = await _binanceLogic.GetOrderBookAsync("BTCEUR");
-                var cob  = await _coinmateLogic.GetOrderBookAsync("BTC_EUR");
+                var cob = await _coinmateLogic.GetOrderBookAsync("BTC_EUR");
 
                 var db = bob.Union(cob);
-              
+
 
                 foreach (var bookItem1 in db.Where(p => !p.InPosition))
                 {
@@ -116,7 +126,7 @@ namespace Trader
 
         }
 
-        
+
 
 
         private async Task CreateOrderCandidateAsync(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
@@ -144,7 +154,7 @@ namespace Trader
 
             _presenter.PrintOrderCandidate(oc);
 
-            
+
             var processOrder = Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate;
             if (processOrder)
             {

@@ -69,13 +69,33 @@ namespace Trader.Coinmate
                 _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             }
-            Console.WriteLine(await result.Content.ReadAsStringAsync());
 
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
                 var res = await JsonSerializer.DeserializeAsync<BalanceResponse>(stream);
                 return res;
             }
+
+        }
+
+        public async Task<double> GetFreeEuroFundsAsync()
+        {
+            var cmAccount = await GetBalancesAsync();
+            if (cmAccount?.data == null)
+            {
+                _presenter.ShowError("Coinmate account info not accessible");
+                return 0;
+            }
+            var euro = cmAccount.data.SingleOrDefault(p => p.Key == "EUR");
+
+            if (euro.Equals(default(KeyValuePair<string, BalanceResponse>)) || euro.Key == null)
+            {
+                _presenter.ShowError("Coinmate Euro balance not accessible");
+                return 0;
+            }
+
+
+            return euro.Value?.balance ?? 0;
 
         }
 

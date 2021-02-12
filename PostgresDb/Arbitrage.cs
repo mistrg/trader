@@ -88,5 +88,9 @@ namespace Trader.PostgresDb
         public double? BuyNetPriceCm { get; set; }
 
         public double? RealProfitNet { get; set; }
+        public double BeforeBinanceBtcFreeAmount { get; set; }
+        public double BeforeCoinmateEuroFreeAmount { get; set; }
+        public double AfterBinanceBtcFreeAmount { get; internal set; }
+        public double AfterCoinmateEuroFreeAmount { get; internal set; }
     }
 }
