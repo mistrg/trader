@@ -68,7 +68,7 @@ namespace Trader.Binance
 
         public async Task<double> GetFreeBtcFundsAsync()
         {
-             var biAccount = await GetAccountInformationAsync();
+            var biAccount = await GetAccountInformationAsync();
             if (biAccount == null)
             {
                 _presenter.ShowError("Binance account info not accessible");
@@ -81,9 +81,9 @@ namespace Trader.Binance
                 _presenter.ShowError("Binance BTC balance not accessible");
                 return 0;
             }
-            
+
             return btcBalance.freeNum;
-            
+
         }
 
         public async Task<OrderResponse> SellMarketAsync(OrderCandidate orderCandidate)
@@ -142,6 +142,8 @@ namespace Trader.Binance
         public async Task<List<DBItem>> GetOrderBookAsync(string pair)
         {
             var result = new List<DBItem>();
+
+
             try
             {
                 var res = await httpClient.GetFromJsonAsync<BIResult>(baseUri + "depth?symbol=" + pair);
@@ -169,8 +171,10 @@ namespace Trader.Binance
             }
             catch
             {
+                throw;
             }
             return result;
+
         }
         public void ListenToOrderbook(CancellationToken stoppingToken)
         {

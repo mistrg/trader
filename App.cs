@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Trader.Aax;
 using Trader.Binance;
 using Trader.Coinmate;
 using Trader.PostgresDb;
@@ -18,6 +19,7 @@ namespace Trader
         private readonly PostgresContext _context;
         private readonly CoinmateLogic _coinmateLogic;
         private readonly BinanceLogic _binanceLogic;
+        private readonly AaxLogic _aaxLogic;
         private readonly Presenter _presenter;
 
         private static int _dbRetries = 0;
@@ -27,8 +29,9 @@ namespace Trader
 
 
 
-        public App(IConfiguration config, Processor processor, PostgresContext context, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter)
+        public App(IConfiguration config, Processor processor, PostgresContext context, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter, AaxLogic aaxLogic)
         {
+            _aaxLogic = aaxLogic;
             _config = config;
             _processor = processor;
             _context = context;
@@ -47,9 +50,10 @@ namespace Trader
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 13;
+            Version = 14;
 
             Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
+
 
             // var biAccount = await _binanceLogic.GetAccountInformationAsync();
             // var btcBalance = biAccount.balances.SingleOrDefault(p => p.asset == "BTC");
@@ -75,9 +79,11 @@ namespace Trader
                 timer.Start();
 
                 var bob = await _binanceLogic.GetOrderBookAsync("BTCEUR");
+                var bobe = await _binanceLogic.GetOrderBookAsync("BTCUSDT");
                 var cob = await _coinmateLogic.GetOrderBookAsync("BTC_EUR");
+                var aob = await _aaxLogic.GetOrderBookAsync("BTCUSDT");
 
-                var db = bob.Union(cob);
+                var db = bob.Union(cob).Union(bobe).Union(aob);
 
 
                 foreach (var bookItem1 in db.Where(p => !p.InPosition))
@@ -95,7 +101,14 @@ namespace Trader
 
                         var estProfitGross = Math.Round(bookItem2.bidPrice.Value * minimalAmount - bookItem1.askPrice.Value * minimalAmount, 2);
 
-                        var estBuyFee = 0;
+                        double buyFeeRate = 0;
+                        if (bookItem1.Exch == nameof(Coinmate))
+                            buyFeeRate = 0.0023;
+                        if (bookItem1.Exch == nameof(Aax))
+                            buyFeeRate = 0.0001;
+
+                        var estBuyFee = bookItem1.askPrice.Value * minimalAmount * buyFeeRate;
+
                         var estSellFee = Math.Round(bookItem2.bidPrice.Value * minimalAmount * 0.001, 2);
 
 

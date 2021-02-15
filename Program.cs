@@ -36,6 +36,7 @@ namespace Trader
             services.AddSingleton<Presenter>();
             services.AddSingleton<Coinmate.CoinmateLogic>();
             services.AddSingleton<Binance.BinanceLogic>();
+            services.AddSingleton<Aax.AaxLogic>();
 
 
             services.AddEntityFrameworkNpgsql().AddDbContext<PostgresContext>(opt =>
