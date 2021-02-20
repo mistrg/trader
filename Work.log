@@ -16,17 +16,16 @@ Work Log
 9.2.2021 Trading polishing, rewrite of pairing engine => removing the bot slowdown
 10.2.2021 Get all transactions and orders,write trades to relation database,get order and transactions from binance and coinmate
 11.2.2021 Fixed problems with duplicate order candidates [Version 12], problem resolutions,One cycle decission BUY / NO BUY,Implement email solution,verify that we have enough on exchanges before trade
-
+20.2.2021 Better logging so that we understand why we didn't trade, working on generic buy and sell exchnages
 
 TECH add logging framework to protocol all htttp requests
 
-Measure the time to close the arbitrage
 
 
 
-
-
-
+Are we selling too much?
+Let's suppose that we want to buy 0.5 BTC for some 20000 Euro. The order candicate will compute buy fee in euro, but in fact the buy fee will be deducted from BTC. 
+This means that we pay exactly 20000 Euro but only get 0.499998 BTC. On the Sell side we would be selling 0.5 BTC for 21000 Euro. We would get only 20995 Euro. Is it ok that we sell 0.5 and not 0.499998?
 
 
 

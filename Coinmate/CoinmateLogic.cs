@@ -15,7 +15,7 @@ using Trader.Infrastructure;
 namespace Trader.Coinmate
 {
 
-    public class CoinmateLogic
+    public class CoinmateLogic : IExchangeLogic
     {
         private static readonly HttpClient httpClient = new HttpClient();
 
@@ -78,7 +78,7 @@ namespace Trader.Coinmate
 
         }
 
-        public async Task<double> GetFreeEuroFundsAsync()
+        public async Task<double> GetAvailableAmountAsync(string currency)
         {
             var cmAccount = await GetBalancesAsync();
             if (cmAccount?.data == null)
@@ -86,37 +86,35 @@ namespace Trader.Coinmate
                 _presenter.ShowError("Coinmate account info not accessible");
                 return 0;
             }
-            var euro = cmAccount.data.SingleOrDefault(p => p.Key == "EUR");
+            var item = cmAccount.data.SingleOrDefault(p => p.Key == currency);
 
-            if (euro.Equals(default(KeyValuePair<string, BalanceResponse>)) || euro.Key == null)
+            if (item.Equals(default(KeyValuePair<string, BalanceResponse>)) || item.Key == null)
             {
-                _presenter.ShowError("Coinmate Euro balance not accessible");
+                _presenter.ShowError($"Coinmate {currency} balance not accessible");
                 return 0;
             }
 
-
-            return euro.Value?.balance ?? 0;
-
+            return item.Value?.available ?? 0;
         }
 
-  public async Task PrintAccountInformationAsync()
+        public async Task PrintAccountInformationAsync()
         {
-            var result = await  GetBalancesAsync();
-            if (result==null || result.data==null )
+            var result = await GetBalancesAsync();
+            if (result == null || result.data == null)
             {
                 _presenter.ShowError("Could not get balances on Coinmat.");
                 return;
             }
             var message = "CM balances/available: ";
-            
+
 
 
             foreach (var item in result.data)
             {
-                if (item.Value?.balance >0 || item.Value?.available>0)
+                if (item.Value?.balance > 0 || item.Value?.available > 0)
                     message += $" {item.Value.balance}/{item.Value.available}{item.Value.currency}";
             }
-            
+
             _presenter.ShowInfo(message);
         }
 
@@ -467,6 +465,11 @@ namespace Trader.Coinmate
                     }
                 }
             };
+        }
+
+        public double GetTradingTakerFeeRate()
+        {
+            return 0.0023;
         }
     }
 

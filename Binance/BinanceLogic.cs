@@ -11,7 +11,7 @@ using Trader.Infrastructure;
 
 namespace Trader.Binance
 {
-    public class BinanceLogic
+    public class BinanceLogic : IExchangeLogic
     {
         public List<string> Pairs { get; }
 
@@ -87,7 +87,7 @@ namespace Trader.Binance
             _presenter.ShowInfo(message);
         }
 
-        public async Task<double> GetFreeBtcFundsAsync()
+        public async Task<double> GetAvailableAmountAsync(string currency)
         {
             var biAccount = await GetAccountInformationAsync();
             if (biAccount == null)
@@ -95,15 +95,15 @@ namespace Trader.Binance
                 _presenter.ShowError("Binance account info not accessible");
                 return 0;
             }
-            var btcBalance = biAccount.balances.SingleOrDefault(p => p.asset == "BTC");
+            var item = biAccount.balances.SingleOrDefault(p => p.asset == currency);
 
-            if (btcBalance == null)
+            if (item == null)
             {
                 _presenter.ShowError("Binance BTC balance not accessible");
                 return 0;
             }
 
-            return btcBalance.freeNum;
+            return item.freeNum;
 
         }
 
@@ -256,5 +256,12 @@ namespace Trader.Binance
 
         }
 
+        public double GetTradingTakerFeeRate()
+        {
+            return 0.001;
+
+        }
+
+      
     }
 }

@@ -42,20 +42,19 @@ namespace Trader
 
         public async Task RunAsync()
         {
-          
+
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 14;
+            Version = 15;
 
             _presenter.ShowInfo($"Trader version {Version} starting runId: {RunId}!");
 
-
-            await _binanceLogic.PrintAccountInformationAsync();
             await _coinmateLogic.PrintAccountInformationAsync();
 
- 
-            return;
+            await _binanceLogic.PrintAccountInformationAsync();
+
+
             long lastCycle = 0;
             while (true)
             {
@@ -76,45 +75,44 @@ namespace Trader
                 var db = bob.Union(cob).Union(bobe).Union(aob);
 
 
-                foreach (var bookItem1 in db.Where(p => !p.InPosition))
+                foreach (var buyEntry in db.Where(p => !p.InPosition))
                 {
-                    var bookItem2s = db.Where(bookItem2 => bookItem2.Exch != bookItem1.Exch && bookItem2.Pair == bookItem1.Pair && (bookItem1.askPrice < bookItem2.bidPrice) && !bookItem2.InPosition);
-                    foreach (var bookItem2 in bookItem2s)
+                    var buyLogic = ResolveExchangeLogic(buyEntry.Exch);
+
+                    var sellEntrys = db.Where(sellEntry => sellEntry.Exch != buyEntry.Exch && sellEntry.Pair == buyEntry.Pair && (buyEntry.askPrice < sellEntry.bidPrice) && !sellEntry.InPosition);
+                    foreach (var sellEntry in sellEntrys)
                     {
-                        if (bookItem1.InPosition || bookItem2.InPosition)
+                        if (buyEntry.InPosition || sellEntry.InPosition)
                             continue;
 
-                        var minimalAmount = Math.Round(Math.Min(bookItem1.amount, bookItem2.amount), 6);
+                        var minimalAmount = Math.Round(Math.Min(buyEntry.amount, sellEntry.amount), 6);
 
                         if (minimalAmount <= 0.0002)
                             continue; //Too small for coinmate
 
-                        var estProfitGross = Math.Round(bookItem2.bidPrice.Value * minimalAmount - bookItem1.askPrice.Value * minimalAmount, 2);
+                        var estProfitGross = Math.Round(sellEntry.bidPrice.Value * minimalAmount - buyEntry.askPrice.Value * minimalAmount, 2);
 
-                        double buyFeeRate = 0;
-                        if (bookItem1.Exch == nameof(Coinmate))
-                            buyFeeRate = 0.0023;
-                        if (bookItem1.Exch == nameof(Aax))
-                            buyFeeRate = 0.0001;
 
-                        var estBuyFee = bookItem1.askPrice.Value * minimalAmount * buyFeeRate;
+                        var sellLogic = ResolveExchangeLogic(sellEntry.Exch);
 
-                        var estSellFee = Math.Round(bookItem2.bidPrice.Value * minimalAmount * 0.001, 2);
+                        var estBuyFee = Math.Round(buyEntry.askPrice.Value * minimalAmount * buyLogic.GetTradingTakerFeeRate(), 2);
+
+                        var estSellFee = Math.Round(sellEntry.bidPrice.Value * minimalAmount * sellLogic.GetTradingTakerFeeRate(), 2);
 
 
                         var estProfitNet = Math.Round(estProfitGross - estBuyFee - estSellFee, 2);
 
-                        var profitNetRate = Math.Round(100 * estProfitNet / (bookItem2.bidPrice.Value * minimalAmount), 2);
+                        var profitNetRate = Math.Round(100 * estProfitNet / (sellEntry.bidPrice.Value * minimalAmount), 2);
 
                         if (profitNetRate <= 0)
                             continue;
 
 
-                        bookItem1.InPosition = true;
-                        bookItem2.InPosition = true;
+                        buyEntry.InPosition = true;
+                        sellEntry.InPosition = true;
 
 
-                        await CreateOrderCandidateAsync(bookItem1, bookItem2, minimalAmount, estProfitGross, estProfitNet, profitNetRate, estBuyFee, estSellFee);
+                        await CreateOrderCandidateAsync(buyEntry, sellEntry, minimalAmount, estProfitGross, estProfitNet, profitNetRate, estBuyFee, estSellFee);
 
                     }
                 }
@@ -130,7 +128,20 @@ namespace Trader
         }
 
 
-
+        private IExchangeLogic ResolveExchangeLogic(string exchange)
+        {
+            switch (exchange)
+            {
+                case nameof(Aax):
+                    return _aaxLogic;
+                case nameof(Coinmate):
+                    return _coinmateLogic;
+                case nameof(Binance):
+                    return _binanceLogic;
+                default:
+                    throw new Exception("Invalid exchnage");
+            }
+        }
 
         private async Task CreateOrderCandidateAsync(DBItem buy, DBItem sell, double minimalAmount, double estProfitGross, double estProfitNet, double estProfitNetRate, double estBuyFee, double estSellFee)
         {
@@ -179,6 +190,8 @@ namespace Trader
 
                 if (App._dbRetries > 20)
                 {
+                    _presenter.ShowError($"Retrying didnt help");
+
                     throw;
                 }
                 _presenter.ShowInfo($"Retrying Database write {App._dbRetries}/20");

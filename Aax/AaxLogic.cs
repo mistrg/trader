@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace Trader.Aax
 {
-    public class AaxLogic 
+    public class AaxLogic : IExchangeLogic
     {
 
 
@@ -44,6 +44,16 @@ namespace Trader.Aax
             {
             }
             return result;
+        }
+
+        public double GetTradingTakerFeeRate()
+        {
+             return 0.001;
+        }
+
+        public Task<double> GetAvailableAmountAsync(string currency)
+        {
+            throw new System.NotImplementedException();
         }
     }
 
