@@ -99,6 +99,27 @@ namespace Trader.Coinmate
 
         }
 
+  public async Task PrintAccountInformationAsync()
+        {
+            var result = await  GetBalancesAsync();
+            if (result==null || result.data==null )
+            {
+                _presenter.ShowError("Could not get balances on Coinmat.");
+                return;
+            }
+            var message = "CM balances/available: ";
+            
+
+
+            foreach (var item in result.data)
+            {
+                if (item.Value?.balance >0 || item.Value?.available>0)
+                    message += $" {item.Value.balance}/{item.Value.available}{item.Value.currency}";
+            }
+            
+            _presenter.ShowInfo(message);
+        }
+
         public async Task<List<DBItem>> GetOrderBookAsync(string pair)
         {
             var result = new List<DBItem>();
@@ -151,7 +172,7 @@ namespace Trader.Coinmate
             {
                 _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
-                Console.WriteLine(await result.Content.ReadAsStringAsync());
+                _presenter.ShowInfo(await result.Content.ReadAsStringAsync());
             }
 
             using (var stream = await result.Content.ReadAsStreamAsync())
@@ -188,7 +209,7 @@ namespace Trader.Coinmate
                 _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             var resa = await result.Content.ReadAsStringAsync();
-            Console.WriteLine(resa);
+            _presenter.ShowInfo(resa);
 
         }
         public async Task GetTransactionHistoryAsync()
@@ -216,7 +237,7 @@ namespace Trader.Coinmate
                 _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             var resa = await result.Content.ReadAsStringAsync();
-            Console.WriteLine(resa);
+            _presenter.ShowInfo(resa);
 
         }
 
@@ -247,7 +268,7 @@ namespace Trader.Coinmate
                 _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
             var resa = await result.Content.ReadAsStringAsync();
-            Console.WriteLine(resa);
+            _presenter.ShowInfo(resa);
             using (var stream = await result.Content.ReadAsStreamAsync())
             {
                 var res = await JsonSerializer.DeserializeAsync<GetOrderHistoryResponse>(stream);

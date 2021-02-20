@@ -65,7 +65,7 @@ public class Processor
         }
 
 
-        Console.WriteLine("Starting arbitrage...");
+        _presenter.ShowInfo("Starting arbitrage...");
 
         var buyResult = await BuyLimitOrderAsync(orderCandidate, arbitrage);
 
@@ -104,7 +104,7 @@ public class Processor
         arbitrage.AfterBinanceBtcFreeAmount = await _binanceLogic.GetFreeBtcFundsAsync();
         arbitrage.AfterCoinmateEuroFreeAmount = await _coinmateLogic.GetFreeEuroFundsAsync();
         await _context.SaveChangesAsync();
-        Console.WriteLine("Ending aritrage...");
+        _presenter.ShowInfo("Ending aritrage...");
 
         await _presenter.SendMessageAsync("Arbitrage succeded", successMessage, arbitrage);
 
@@ -165,7 +165,7 @@ public class Processor
             return new Tuple<bool, Order>(false, null);
         }
 
-        Console.WriteLine($"Waiting for buy confirmation");
+        _presenter.ShowInfo($"Waiting for buy confirmation");
         arbitrage.BuyOrderId = buyResponse.data;
 
         Order result = null;
@@ -191,14 +191,14 @@ public class Processor
         var buySuccess = result != null && result.status != null && (result.status == "FILLED" || result.status == "PARTIALLY_FILLED");
         if (!buySuccess)
         {
-            Console.WriteLine($"Buylimit order was sent but could not be confirmed in time. Current state is {result?.status} Trying to cancel the order.");
+            _presenter.ShowInfo($"Buylimit order was sent but could not be confirmed in time. Current state is {result?.status} Trying to cancel the order.");
 
             if (result?.status == "CANCELLED")
             {
                 if (result?.remainingAmount == null || result?.remainingAmount.Value == 0)
                 {
                     arbitrage.Comment = "Order was already cancelled successfully.Process cancel...";
-                    Console.WriteLine(arbitrage.Comment);
+                    _presenter.ShowInfo(arbitrage.Comment);
 
                     return new Tuple<bool, Order>(false, result);
                 }
@@ -206,7 +206,7 @@ public class Processor
                 {
                     orderCandidate.Amount -= result.remainingAmount.Value;
                     arbitrage.Comment = $"Order is cancelled but there is an open position, that we need to sell. Amount adjusted to {orderCandidate.Amount}.";
-                    Console.WriteLine(arbitrage.Comment);
+                    _presenter.ShowInfo(arbitrage.Comment);
                     return new Tuple<bool, Order>(true, result);
                 }
             }
@@ -225,7 +225,7 @@ public class Processor
             if (buyCancelResult != null && buyCancelResult.data)
             {
                 arbitrage.Comment = "Order was cancelled successfully.Process cancel...";
-                Console.WriteLine(arbitrage.Comment);
+                _presenter.ShowInfo(arbitrage.Comment);
 
                 return new Tuple<bool, Order>(false, result);
             }
@@ -248,11 +248,11 @@ public class Processor
 
             orderCandidate.Amount -= result.remainingAmount.Value;
 
-            Console.WriteLine($"Successful partial {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price})  on {orderCandidate.BuyExchange} status {result.status}. SellAmount updated.");
+            _presenter.ShowInfo($"Successful partial {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price})  on {orderCandidate.BuyExchange} status {result.status}. SellAmount updated.");
         }
         else
         {
-            Console.WriteLine($"Successful {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price}) on {orderCandidate.BuyExchange} status {result.status}");
+            _presenter.ShowInfo($"Successful {result.orderTradeType} {result.originalAmount}+{result.remainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price}) on {orderCandidate.BuyExchange} status {result.status}");
         }
 
         return new Tuple<bool, Order>(true, result);
@@ -278,7 +278,7 @@ public class Processor
         }
 
 
-        Console.WriteLine("Let's sell");
+        _presenter.ShowInfo("Let's sell");
 
         OrderResponse result = null;
         try
@@ -303,10 +303,10 @@ public class Processor
 
         _context.EnrichSell(arbitrage, result);
 
-        Console.WriteLine($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} {result.side} {result.type} OrderId {result.orderId} OCID {result.clientOrderId}  price: {result.price} symbol: {result.symbol} Qty: {result.executedQty}/{result.origQty} cumQty: {result.cummulativeQuoteQty}");
+        _presenter.ShowInfo($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} {result.side} {result.type} OrderId {result.orderId} OCID {result.clientOrderId}  price: {result.price} symbol: {result.symbol} Qty: {result.executedQty}/{result.origQty} cumQty: {result.cummulativeQuoteQty}");
 
         if (result.status == "FILLED")
-            Console.WriteLine("Successfully sold");
+            _presenter.ShowInfo("Successfully sold");
         else
         {
             _presenter.ShowPanic("Check line above for problems");

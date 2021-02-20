@@ -66,6 +66,27 @@ namespace Trader.Binance
             }
         }
 
+
+        public async Task PrintAccountInformationAsync()
+        {
+            var result = await  GetAccountInformationAsync();
+            if (result==null || result.balances==null || result.balances.Count ==0)
+            {
+                _presenter.ShowError("Could not get balances on Binance.");
+                return;
+            }
+            var message = "BI free balances: ";
+            
+            
+            foreach (var item in result.balances)
+            {
+                if (item.freeNum >0)
+                    message += $" {item.freeNum}{item.asset}";
+            }
+            
+            _presenter.ShowInfo(message);
+        }
+
         public async Task<double> GetFreeBtcFundsAsync()
         {
             var biAccount = await GetAccountInformationAsync();

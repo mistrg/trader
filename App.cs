@@ -42,30 +42,20 @@ namespace Trader
 
         public async Task RunAsync()
         {
-            var logDirectory = _config.GetValue<string>("Runtime:LogOutputDirectory");
-            var logger = new LoggerConfiguration()
-                .WriteTo.File(logDirectory)
-                .CreateLogger();
-
+          
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
             Version = 14;
 
-            Console.WriteLine($"Trader version {Version} starting runId: {RunId}!");
+            _presenter.ShowInfo($"Trader version {Version} starting runId: {RunId}!");
 
 
-            // var biAccount = await _binanceLogic.GetAccountInformationAsync();
-            // var btcBalance = biAccount.balances.SingleOrDefault(p => p.asset == "BTC");
-            // Console.WriteLine(btcBalance.freeNum);
+            await _binanceLogic.PrintAccountInformationAsync();
+            await _coinmateLogic.PrintAccountInformationAsync();
 
-
-
-            // var cmAccount = await _coinmateLogic.GetBalancesAsync();
-            // var euro = cmAccount.data.SingleOrDefault(p => p.Key == "EUR");
-
-            // Console.WriteLine(euro.Value?.balance);
-            // return;
+ 
+            return;
             long lastCycle = 0;
             while (true)
             {
@@ -191,7 +181,7 @@ namespace Trader
                 {
                     throw;
                 }
-                Console.WriteLine($"Retrying Database write {App._dbRetries}/20");
+                _presenter.ShowInfo($"Retrying Database write {App._dbRetries}/20");
                 MongoDatabase.Reset();
             }
         }

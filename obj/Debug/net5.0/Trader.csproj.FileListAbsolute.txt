@@ -57,3 +57,4 @@ C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\MimeKit.dll
 C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\BouncyCastle.Crypto.dll
 C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\System.Security.Cryptography.Pkcs.dll
 C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\runtimes\win\lib\netcoreapp3.0\System.Security.Cryptography.Pkcs.dll
+C:\Users\Stan\Repos\Trader\bin\Debug\net5.0\appsettings.json

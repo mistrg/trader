@@ -8,7 +8,7 @@ namespace Trader.Email
 {
     public interface IMailer
     {
-        Task SendEmailAsync( string subject, string body);
+        Task<string> SendEmailAsync( string subject, string body);
     }
 
     public class Mailer : IMailer
@@ -20,7 +20,7 @@ namespace Trader.Email
             _smtpSettings = smtpSettings.Value;
         }
 
-        public async Task SendEmailAsync(string subject, string body)
+        public async Task<string> SendEmailAsync(string subject, string body)
         {
             try
             {
@@ -28,7 +28,7 @@ namespace Trader.Email
                 message.From.Add(new MailboxAddress(_smtpSettings.SenderName, _smtpSettings.SenderEmail));
 
                 foreach (var email in _smtpSettings.To.Split(","))
-                    message.To.Add(new MailboxAddress(email));
+                    message.To.Add(new MailboxAddress(email,email));
                 message.Subject = subject;
                 message.Body = new TextPart("html")
                 {
@@ -50,8 +50,9 @@ namespace Trader.Email
             }
             catch (Exception e)
             {
-                Console.WriteLine($"SendEmail failed {e.Message} Message {body} not delivered");
+                return $"SendEmail failed {e.Message} Message {body} not delivered";
             }
+            return string.Empty;
         }
     }
 }
