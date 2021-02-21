@@ -84,13 +84,14 @@ namespace Trader.PostgresDb
 
 
         public bool IsSuccess { get; set; }
-        public double? SellNetPriceBi { get; set; }
-        public double? BuyNetPriceCm { get; set; }
+        public double? SellNetPrice { get; set; }
+        public double? BuyNetPrice { get; set; }
 
         public double? RealProfitNet { get; set; }
         public double BeforeSellExchangeAvailableAmount { get; set; }
         public double BeforeBuyExchangeAvailableAmount { get; set; }
         public double AfterSellExchangeAvailableAmount { get; set; }
         public double AfterBuyExchangeAvailableAmount { get; set; }
+        public double? SellCommission { get;  set; }
     }
 }

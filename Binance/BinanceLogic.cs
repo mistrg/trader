@@ -8,6 +8,7 @@ using Trader;
 using System.Linq;
 using System.Text.Json;
 using Trader.Infrastructure;
+using Trader.PostgresDb;
 
 namespace Trader.Binance
 {
@@ -69,21 +70,21 @@ namespace Trader.Binance
 
         public async Task PrintAccountInformationAsync()
         {
-            var result = await  GetAccountInformationAsync();
-            if (result==null || result.balances==null || result.balances.Count ==0)
+            var result = await GetAccountInformationAsync();
+            if (result == null || result.balances == null || result.balances.Count == 0)
             {
                 _presenter.ShowError("Could not get balances on Binance.");
                 return;
             }
             var message = "BI free balances: ";
-            
-            
+
+
             foreach (var item in result.balances)
             {
-                if (item.freeNum >0)
+                if (item.freeNum > 0)
                     message += $" {item.freeNum}{item.asset}";
             }
-            
+
             _presenter.ShowInfo(message);
         }
 
@@ -107,7 +108,128 @@ namespace Trader.Binance
 
         }
 
-        public async Task<OrderResponse> SellMarketAsync(OrderCandidate orderCandidate)
+
+        public async Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate)
+        {
+            var result = new SellResult();
+
+
+            if (!Config.ProcessTrades)
+            {
+                var comment = "SellMarketAsync skipped. ProcessTrades is not activated";
+                _presenter.Warning(comment);
+                result.Comment = comment;
+
+                return new Tuple<bool, SellResult>(true, result);
+            }
+
+            orderCandidate.Amount = Math.Round(orderCandidate.Amount, 6);
+
+            if (orderCandidate.Amount <= 0)
+            {
+                var comment = "SellMarketAsync skipped. Amount too small";
+                _presenter.ShowError(comment);
+                result.Comment = comment;
+
+                return new Tuple<bool, SellResult>(true, result);
+            }
+
+
+            _presenter.ShowInfo("Let's sell");
+
+            OrderResponse sellResponse = null;
+            try
+            {
+                sellResponse = await SellMarketAsync(orderCandidate.Pair, orderCandidate.Amount, orderCandidate.Id);
+                result.Status = sellResponse.status;
+
+            }
+            catch (System.Exception ex)
+            {
+                var comment = $"SellMarketAsync failed. {ex}. Please check binance manually.";
+                _presenter.ShowPanic(comment);
+                result.Comment = comment;
+                return new Tuple<bool, SellResult>(false, result);
+
+            }
+
+            if (result == null)
+            {
+                var comment = $"SellMarketAsync failed. Result is null.";
+                _presenter.ShowPanic(comment);
+                result.Comment = comment;
+                return new Tuple<bool, SellResult>(false, result);
+            }
+
+
+            _presenter.ShowInfo($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} {result.side} {result.type} OrderId {result.orderId} OCID {result.clientOrderId}  price: {result.price} symbol: {result.symbol} Qty: {result.executedQty}/{result.origQty} cumQty: {result.cummulativeQuoteQty}");
+
+            if (result.Status == "FILLED")
+                _presenter.ShowInfo("Successfully sold");
+            else
+            {
+                _presenter.ShowPanic("Check line above for problems");
+            }
+
+            return new Tuple<bool, SellResult>(result.status == "FILLED", result);
+        }
+
+
+        private async Task<OrderResponse> SellMarketAsync(string currencyPair, double amount, long clientOrderId)
+        {
+
+            var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() * 1000;
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("timestamp", timestamp.ToString()),
+
+                new KeyValuePair<string, string>("symbol", currencyPair),
+                new KeyValuePair<string, string>("side", "SELL"),
+                new KeyValuePair<string, string>("type", "MARKET"),
+                new KeyValuePair<string, string>("quantity", string.Format("{0:0.##############}", amount)),
+                new KeyValuePair<string, string>("newOrderRespType","FULL"),
+                //new KeyValuePair<string, string>("recvWindow","5000"), 
+                new KeyValuePair<string, string>("newClientOrderId",clientOrderId.ToString()),
+
+
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+            var urlEncodedString = await content.ReadAsStringAsync();
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+
+
+
+
+
+            pairs.Add(new KeyValuePair<string, string>("signature", hashHMACHex));
+            var finalContent = new FormUrlEncodedContent(pairs);
+
+
+
+            finalContent.Headers.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+
+            var result = await httpClient.PostAsync(baseUri + "order", finalContent);
+
+            if (!result.IsSuccessStatusCode)
+            {
+                var str = await result.Content.ReadAsStringAsync();
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+            }
+
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<OrderResponse>(stream);
+                return res;
+            }
+        }
+
+
+
+        private async Task<OrderResponse> BuyLimitOrderAsync(OrderCandidate orderCandidate)
         {
 
             var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() * 1000;
@@ -117,10 +239,13 @@ namespace Trader.Binance
                 new KeyValuePair<string, string>("timestamp", timestamp.ToString()),
 
                 new KeyValuePair<string, string>("symbol", orderCandidate.Pair),
-                new KeyValuePair<string, string>("side", "SELL"),
-                new KeyValuePair<string, string>("type", "MARKET"),
+                new KeyValuePair<string, string>("side", "BUY"),
                 new KeyValuePair<string, string>("quantity", string.Format("{0:0.##############}", orderCandidate.Amount)),
-                new KeyValuePair<string, string>("newOrderRespType","RESULT"),
+                new KeyValuePair<string, string>("price", string.Format("{0:0.##############}", orderCandidate.UnitAskPrice)),
+                new KeyValuePair<string, string>("timeInForce", "GTC"),
+
+
+                new KeyValuePair<string, string>("newOrderRespType","FULL"),
                 //new KeyValuePair<string, string>("recvWindow","5000"), 
                 new KeyValuePair<string, string>("newClientOrderId",orderCandidate.Id.ToString()),
 
@@ -160,6 +285,7 @@ namespace Trader.Binance
         }
 
 
+
         public async Task<List<DBItem>> GetOrderBookAsync(string pair)
         {
             var result = new List<DBItem>();
@@ -197,7 +323,7 @@ namespace Trader.Binance
             return result;
 
         }
-        public void ListenToOrderbook(CancellationToken stoppingToken)
+        private void ListenToOrderbook(CancellationToken stoppingToken)
         {
 
             foreach (var pair in Pairs)
@@ -262,6 +388,10 @@ namespace Trader.Binance
 
         }
 
-      
+        Task<Tuple<bool, BuyResult>> IExchangeLogic.BuyLimitOrderAsync(OrderCandidate orderCandidate)
+        {
+            throw new Exception();
+        }
+
     }
 }

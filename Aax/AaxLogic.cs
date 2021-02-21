@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using Trader.Infrastructure;
 
 namespace Trader.Aax
 {
@@ -53,7 +54,17 @@ namespace Trader.Aax
 
         public Task<double> GetAvailableAmountAsync(string currency)
         {
-            throw new System.NotImplementedException();
+            throw new System.Exception();
+        }
+
+        public Task<System.Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
+        {
+            throw new System.Exception();
+        }
+
+        public Task<System.Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate)
+        {
+            throw new System.Exception();
         }
     }
 

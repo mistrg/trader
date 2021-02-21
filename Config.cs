@@ -9,9 +9,9 @@ public static class Config
 
     public static string BinanceApiKey { get { return "PhWiIMtXBRVucLWpsmz1TSffWN1jgpvE9TD3T7cLwPtgG1MdmLkqkx1GBr7EdzxW"; } }
     public static string BinanceSecretKey { get { return "wkLjUrU6Jfa9XbZ8kxysr7xajMq67fySuxysIjxYnhpoYi46LtUIrTkfnZC052Y1"; } }
-    
-   
-    
+
+
+
     public static string PostgresConnectionString { get { return "Server = ec2-34-252-251-16.eu-west-1.compute.amazonaws.com; Port = 5432; Database = dan85i13ot0ne0; User Id = pablawtgfsvjlv; Password = c918a98d9c1b947003a3f5810c2416f749517740c1522100f9e7089b0e5cb6b6; SslMode=Require; Trust Server Certificate=true"; } }
 
     public static bool WriteToMongo { get { return true; } }
@@ -20,9 +20,13 @@ public static class Config
     public static bool AutomatedTrading { get { return true; } }
     public static double AutomatedTradingMinEstimatedProfitNetRate { get { return 0.4; } }
 
-    
+
+
 
     public static bool ProcessTrades { get { return true; } }
+
+    public static int BuyTimeoutInMs { get { return 2500; } }
+    public static int SellTimeoutInMs { get { return 5000; } }
 
 
 }

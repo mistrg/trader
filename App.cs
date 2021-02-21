@@ -54,6 +54,9 @@ namespace Trader
 
             await _binanceLogic.PrintAccountInformationAsync();
 
+            
+        
+            return ;
 
             long lastCycle = 0;
             while (true)

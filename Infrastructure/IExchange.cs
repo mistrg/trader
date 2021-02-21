@@ -1,7 +1,11 @@
+using System;
 using System.Threading.Tasks;
+using Trader.Infrastructure;
 
 public interface IExchangeLogic
 {
     double GetTradingTakerFeeRate();
     Task<double> GetAvailableAmountAsync(string currency);
+    Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate);
+    Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate);
 }

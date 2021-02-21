@@ -17,6 +17,7 @@ Work Log
 10.2.2021 Get all transactions and orders,write trades to relation database,get order and transactions from binance and coinmate
 11.2.2021 Fixed problems with duplicate order candidates [Version 12], problem resolutions,One cycle decission BUY / NO BUY,Implement email solution,verify that we have enough on exchanges before trade
 20.2.2021 Better logging so that we understand why we didn't trade, working on generic buy and sell exchnages
+21.2.2021 3890 Lines of code, further refactoring and generalisations
 
 TECH add logging framework to protocol all htttp requests
 

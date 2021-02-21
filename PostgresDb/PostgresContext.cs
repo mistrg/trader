@@ -58,8 +58,10 @@ namespace Trader.PostgresDb
 
                 arbitrage.BuyWhenCreated = Helper.UnixTimeStampToDateTime(result.timestamp);
 
+                //arbitrage.BuyCommission = result.commissionTotal;
 
-                arbitrage.BuyNetPriceCm = arbitrage.BuyUnitPrice * (arbitrage.BuyOrginalAmount - arbitrage.BuyRemainingAmount); // mozna - poplatky
+
+                arbitrage.BuyNetPrice = arbitrage.BuyUnitPrice * (arbitrage.BuyOrginalAmount - arbitrage.BuyRemainingAmount); // mozna - poplatky
             }
 
 
@@ -83,14 +85,14 @@ namespace Trader.PostgresDb
                 arbitrage.SellExecutedQty = result.executedQtyNum;
                 arbitrage.SellOrderId = result.orderId;
 
+                arbitrage.SellCommission = result.commissionTotal;
 
 
 
-                //SellPriceNetBi SELECT 19.51052363 -  (19.51052363 * 0.001) = 19.49101310637   a."Ocid" = 637486012391027239
-                arbitrage.SellNetPriceBi = result.cummulativeQuoteQtyNum - (result.cummulativeQuoteQtyNum * 0.001);
+                arbitrage.SellNetPrice = result.cummulativeQuoteQtyNum - (result.commissionTotal ?? 0);
 
 
-                arbitrage.RealProfitNet =  arbitrage.SellNetPriceBi - arbitrage.BuyNetPriceCm;
+                arbitrage.RealProfitNet = arbitrage.SellNetPrice - arbitrage.BuyNetPrice;
 
             }
         }

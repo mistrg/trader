@@ -10,7 +10,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Trader.Infrastructure;
-
+using Trader.PostgresDb;
 
 namespace Trader.Coinmate
 {
@@ -181,7 +181,7 @@ namespace Trader.Coinmate
 
         }
 
-        public async Task GetTradeHistoryAsync()
+        public async Task GetTradeHistoryAsync(long? orderId)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
 
@@ -197,6 +197,9 @@ namespace Trader.Coinmate
                 new KeyValuePair<string, string>("signature", hashHMACHex),
 
             };
+
+            if (orderId != null)
+                pairs.Add(new KeyValuePair<string, string>("orderId", orderId.ToString()));
 
             var content = new FormUrlEncodedContent(pairs);
 
@@ -209,8 +212,10 @@ namespace Trader.Coinmate
             var resa = await result.Content.ReadAsStringAsync();
             _presenter.ShowInfo(resa);
 
+
+
         }
-        public async Task GetTransactionHistoryAsync()
+        public async Task<TransactionHistoryResponse> GetTransactionHistoryAsync(long? orderId)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
 
@@ -227,6 +232,9 @@ namespace Trader.Coinmate
 
             };
 
+            if (orderId != null)
+                pairs.Add(new KeyValuePair<string, string>("orderId", orderId.ToString()));
+
             var content = new FormUrlEncodedContent(pairs);
 
             var result = await httpClient.PostAsync(baseUri + "transactionHistory", content);
@@ -234,8 +242,21 @@ namespace Trader.Coinmate
             if (!result.IsSuccessStatusCode)
                 _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
 
-            var resa = await result.Content.ReadAsStringAsync();
-            _presenter.ShowInfo(resa);
+            // var resa = await result.Content.ReadAsStringAsync();
+            // _presenter.ShowInfo(resa);
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<TransactionHistoryResponse>(stream);
+
+                //     foreach (var item in res.data)
+                // {
+                //     Console.WriteLine($"transactionType: {item.transactionType} orderId:{item.orderId} fee:{item.fee} feeCurrency:{item.feeCurrency} amount:{item.amount} amountCurrency:{item.amountCurrency} price:{item.price} priceCurrency:{item.priceCurrency}");
+                // }
+
+                return res;
+
+            }
 
         }
 
@@ -308,7 +329,191 @@ namespace Trader.Coinmate
             }
         }
 
-        public async Task<BuyResponse> BuyInstant(string currencyPair, double amountToPayInSecondCurrency)
+        public async Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
+        {
+            var result = new BuyResult();
+
+            if (!Config.ProcessTrades)
+            {
+                var comment = "BuyLimitOrderAsync skipped. ProcessTrades is not activated";
+                _presenter.Warning(comment);
+                result.Comment = comment;
+
+                return new Tuple<bool, BuyResult>(true, result);
+            }
+
+            _presenter.PrintOrderCandidate(orderCandidate);
+
+            BuyResponse buyResponse = null;
+            try
+            {
+                var pair = GetLongPair(orderCandidate.Pair);
+                if (!Pairs.Any(p => p == pair))
+                {
+                    var comment = "Unsupported currency pair. Process cancel...";
+                    _presenter.ShowError(comment);
+
+                    result.Comment = comment;
+
+                    return new Tuple<bool, BuyResult>(false, result);
+                }
+
+                buyResponse = await BuyLimitOrderAsync(pair, orderCandidate.Amount, orderCandidate.UnitAskPrice, orderCandidate.Id);
+            }
+            catch (System.Exception ex)
+            {
+                var comment = $"Buylimit failed. {ex}. Process cancel...";
+
+                _presenter.ShowPanic(comment);
+                result.Comment = comment;
+                return new Tuple<bool, BuyResult>(false, result);
+            }
+
+            if (buyResponse == null)
+            {
+                var comment = $"Buyresponse is empty. Process cancel...";
+                _presenter.ShowError(comment);
+                result.Comment = comment;
+                return new Tuple<bool, BuyResult>(false, result);
+            }
+
+            if (buyResponse.error)
+            {
+                var comment = $"Buylimit failed. {buyResponse.errorMessage}. Process cancel...";
+                _presenter.ShowError(comment);
+                result.Comment = comment;
+                return new Tuple<bool, BuyResult>(false, result);
+            }
+
+            if (buyResponse.data == null || buyResponse.data <= 0)
+            {
+                var comment = $"Buylimit failed. Invalid order ID. Process cancel...";
+                _presenter.ShowPanic(comment);
+                result.Comment = comment;
+                return new Tuple<bool, BuyResult>(false, result);
+            }
+
+            _presenter.ShowInfo($"Waiting for buy confirmation");
+            result.OrderId = buyResponse.data.Value;
+
+            Order response = null;
+
+            bool opComplete = System.Threading.SpinWait.SpinUntil(() =>
+            {
+                try
+                {
+                    Thread.Sleep(480); // Coinmate throtling
+                    response = GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
+                    result.Status = response.status;
+                    result.RemainingAmount = response.remainingAmount;
+                }
+                catch (Exception ex)
+                {
+                    _presenter.ShowError($"GetOrderByOrderIdAsync failed. {ex} Retrying...");
+                }
+                return response != null && (response.status == "FILLED" || response.status == "PARTIALLY_FILLED" || response.status == "CANCELLED");
+
+
+            }, TimeSpan.FromMilliseconds(Config.BuyTimeoutInMs));
+
+            var buySuccess = result.Status != null && (result.Status == "FILLED" || result.Status == "PARTIALLY_FILLED");
+            if (!buySuccess)
+            {
+                _presenter.ShowInfo($"Buylimit order was sent but could not be confirmed in time. Current state is {result?.Status} Trying to cancel the order.");
+
+                if (result?.Status == "CANCELLED")
+                {
+                    if (result?.RemainingAmount == null || result?.RemainingAmount.Value == 0)
+                    {
+                        var comment = "Order was already cancelled successfully.Process cancel...";
+                        _presenter.ShowInfo(comment);
+                        result.Comment = comment;
+                        return new Tuple<bool, BuyResult>(false, result);
+                    }
+                    else
+                    {
+                        orderCandidate.Amount -= result.RemainingAmount.Value;
+                        var comment = $"Order is cancelled but there is an open position, that we need to sell. Amount adjusted  to {orderCandidate.Amount}.";
+                        _presenter.ShowInfo(comment);
+                        result.Comment = comment;
+                        return new Tuple<bool, BuyResult>(true, result);
+                    }
+                }
+
+                //OPENED state
+                CancelOrderResponse buyCancelResult = null;
+                try
+                {
+                    buyCancelResult = await CancelOrderAsync(buyResponse.data.Value);
+                }
+                catch (System.Exception ex)
+                {
+                    _presenter.ShowPanic($"CancelOrderAsync failed. {ex}. Maybe buy was successful.");
+                }
+
+                if (buyCancelResult != null && buyCancelResult.data)
+                {
+                    var comment = "Order was cancelled successfully.Process cancel...";
+                    _presenter.ShowInfo(comment);
+
+                    result.Comment = comment;
+                    return new Tuple<bool, BuyResult>(false, result);
+                }
+                else
+                {
+                    var comment = $"CancelOrderAsync  exited with wrong errorcode. Assuming the trade was finished.";
+                    _presenter.ShowPanic(comment);
+                    result.Comment = comment;
+                    return new Tuple<bool, BuyResult>(true, result);
+                }
+            }
+
+            if (result.Status == "PARTIALLY_FILLED")
+            {
+                if (result.RemainingAmount is null)
+                {
+                    var comment = $"Partial buy was done but remaing amount is not set. Don't know how much to sell. Please check the coinmate platform manually...Process cancel...";
+                    _presenter.ShowPanic(comment);
+                    result.Comment = comment;
+                    return new Tuple<bool, BuyResult>(false, result);
+                }
+
+                orderCandidate.Amount -= result.RemainingAmount.Value;
+
+                // _presenter.ShowInfo($"Successful partial {result.orderTradeType} {result.originalAmount}+{result.RemainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price})  on {orderCandidate.BuyExchange} status {result.Status}. SellAmount updated.");
+            }
+            else
+            {
+                //  _presenter.ShowInfo($"Successful {result.orderTradeType} {result.originalAmount}+{result.RemainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price}) on {orderCandidate.BuyExchange} status {result.Status}");
+            }
+
+            //Check the fees
+            try
+            {
+                var fees = await GetTransactionHistoryAsync(result.OrderId);
+                if (fees != null && fees.data != null && fees.data.Count > 0)
+                {
+                    result.Fee = fees.data.Sum(p => p.fee ?? 0);
+                    result.FeeCurrency = fees.data.FirstOrDefault().feeCurrency;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                 var comment = $"Can not determine fees. " + ex;
+                _presenter.ShowError(comment);
+                result.Comment = comment;
+                return new Tuple<bool, BuyResult>(true, result);
+
+
+            }
+
+
+
+            return new Tuple<bool, BuyResult>(true, result);
+
+        }
+
+        private async Task<BuyResponse> BuyInstant(string currencyPair, double amountToPayInSecondCurrency)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
 
@@ -341,8 +546,7 @@ namespace Trader.Coinmate
 
         }
 
-
-        public async Task<BuyResponse> BuyLimitOrderAsync(string currencyPair, double amount, double price, long clientOrderId)
+        private async Task<BuyResponse> BuyLimitOrderAsync(string currencyPair, double amount, double price, long clientOrderId)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
 
@@ -378,99 +582,178 @@ namespace Trader.Coinmate
             }
         }
 
-        public void ListenToOrderbook(CancellationToken stoppingToken)
+
+
+        public async Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate)
         {
+            var result = new SellResult();
 
-
-            foreach (var pair in Pairs)
+            if (!Config.ProcessTrades)
             {
+                var comment = "SellMarketAsync skipped. ProcessTrades is not activated";
+                _presenter.Warning(comment);
+                result.Comment = comment;
 
-                var t = new Task(async () =>
+                return new Tuple<bool, SellResult>(true, result);
+            }
+
+            _presenter.PrintOrderCandidate(orderCandidate);
+
+            SellInstantOrderResponse sellResponse = null;
+            try
+            {
+                var pair = GetLongPair(orderCandidate.Pair);
+                if (!Pairs.Any(p => p == pair))
                 {
-                    while (!stoppingToken.IsCancellationRequested)
-                    {
+                    var comment = "Unsupported currency pair. Process cancel...";
+                    _presenter.ShowError(comment);
 
-                        using (var socket = new ClientWebSocket())
-                            try
-                            {
-                                await socket.ConnectAsync(new Uri(uri + pair), stoppingToken);
+                    result.Comment = comment;
 
-                                await Receive(socket, stoppingToken, pair);
+                    return new Tuple<bool, SellResult>(false, result);
+                }
 
-                            }
-                            catch
-                            {
-                            }
-                    }
-                }, stoppingToken);
+                sellResponse = await SellMarketAsync(pair, orderCandidate.Amount, orderCandidate.Id);
+            }
+            catch (System.Exception ex)
+            {
+                var comment = $"SellMarketAsync failed. {ex}. Process cancel...";
 
-                t.Start();
+                _presenter.ShowPanic(comment);
+                result.Comment = comment;
+                return new Tuple<bool, SellResult>(false, result);
+            }
+
+            if (sellResponse == null)
+            {
+                var comment = $"sellResponse is empty. Process cancel...";
+                _presenter.ShowError(comment);
+                result.Comment = comment;
+                return new Tuple<bool, SellResult>(false, result);
+            }
+
+            if (sellResponse.error)
+            {
+                var comment = $"SellMarketAsync failed. {sellResponse.errorMessage}. Process cancel...";
+                _presenter.ShowError(comment);
+                result.Comment = comment;
+                return new Tuple<bool, SellResult>(false, result);
+            }
+
+            if (sellResponse.data == null || sellResponse.data <= 0)
+            {
+                var comment = $"SellMarketAsync failed. Invalid order ID. Process cancel...";
+                _presenter.ShowPanic(comment);
+                result.Comment = comment;
+                return new Tuple<bool, SellResult>(false, result);
+            }
+
+            _presenter.ShowInfo($"Waiting for sell confirmation");
+            result.OrderId = sellResponse.data.Value;
+
+            Order response = null;
+
+            bool opComplete = System.Threading.SpinWait.SpinUntil(() =>
+            {
+                try
+                {
+                    Thread.Sleep(480); // Coinmate throtling
+                    response = GetOrderByOrderIdAsync(result.OrderId).Result;
+                    result.Status = response.status;
+                    result.RemainingAmount = response.remainingAmount;
+                    result.OriginalAmount = response.originalAmount;
+                }
+                catch (Exception ex)
+                {
+                    _presenter.ShowError($"GetOrderByOrderIdAsync failed. {ex} Retrying...");
+                }
+                return response != null && (response.status == "FILLED" || response.status == "PARTIALLY_FILLED" || response.status == "CANCELLED");
 
 
+            }, TimeSpan.FromMilliseconds(Config.SellTimeoutInMs));
+
+            var sellSuccess = result.Status != null && (result.Status == "FILLED");
+
+            if (!sellSuccess)
+            {
+                var comment = $"Sell was not succeful.OrderId: {result.OrderId} Status: {result.Status} Please check the coinmate platform manually...Process cancel...";
+                _presenter.ShowPanic(comment);
+                result.Comment = comment;
+                return new Tuple<bool, SellResult>(false, result);
+            }
+
+
+            //Check the fees
+            try
+            {
+                var fees = await GetTransactionHistoryAsync(result.OrderId);
+                if (fees != null && fees.data != null && fees.data.Count > 0)
+                {
+                    result.Fee = fees.data.Sum(p => p.fee ?? 0);
+                    result.FeeCurrency = fees.data.FirstOrDefault().feeCurrency;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                var comment = $"Can not determine fees. " + ex;
+                _presenter.ShowError(comment);
+                result.Comment = comment;
+                return new Tuple<bool, SellResult>(true, result);
+
+            }
+
+            _presenter.ShowInfo($"Sell successful  {result.OriginalAmount}+{result.RemainingAmount}={orderCandidate.Amount} {orderCandidate.Pair}  on {orderCandidate.BuyExchange} status {result.Status}");
+
+
+            return new Tuple<bool, SellResult>(true, result);
+
+
+        }
+
+        private async Task<SellInstantOrderResponse> SellMarketAsync(string currencyPair, double amount, long clientOrderId)
+        {
+            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+                new KeyValuePair<string, string>("nonce", nonce.ToString()),
+                new KeyValuePair<string, string>("signature", hashHMACHex),
+
+                new KeyValuePair<string, string>("amount", string.Format("{0:0.##############}", amount)),
+                new KeyValuePair<string, string>("currencyPair", currencyPair),
+                new KeyValuePair<string, string>("clientOrderId", clientOrderId.ToString()),
+
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+
+            var result = await httpClient.PostAsync(baseUri + "sellInstant", content);
+
+            if (!result.IsSuccessStatusCode)
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<SellInstantOrderResponse>(stream);
+                return res;
             }
         }
 
-        private async Task Send(ClientWebSocket socket, string data, CancellationToken stoppingToken) =>
-            await socket.SendAsync(Encoding.UTF8.GetBytes(data), WebSocketMessageType.Binary, true, stoppingToken);
-
-        private async Task Receive(ClientWebSocket socket, CancellationToken stoppingToken, string pair)
-        {
-            var upair = pair.Replace("_", "");
-            var buffer = new ArraySegment<byte>(new byte[2048]);
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                WebSocketReceiveResult result;
-                using (var ms = new MemoryStream())
-                {
-                    do
-                    {
-                        result = await socket.ReceiveAsync(buffer, stoppingToken);
-                        ms.Write(buffer.Array, buffer.Offset, result.Count);
-                    } while (!result.EndOfMessage);
-
-                    if (result.MessageType == WebSocketMessageType.Close)
-                        break;
-
-                    ms.Seek(0, SeekOrigin.Begin);
-
-                    var res = await JsonSerializer.DeserializeAsync<CmResult>(ms);
-
-                    if (res.Event == "data" && res.payload != null)
-                    {
-                        foreach (var x in res.payload.asks)
-                        {
-                            var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.askPrice == x.price);
-                            if (dbEntry == null)
-                                InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price });
-                        }
 
 
-                        foreach (var x in res.payload.bids)
-                        {
-                            var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Coinmate) && p.Pair == upair && p.amount == x.amount && p.bidPrice == x.price);
-                            if (dbEntry == null)
-                                InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
-                        }
-
-                        foreach (var w in InMemDatabase.Instance.Items.Where(p => p.Exch == nameof(Coinmate) && p.Pair == upair))
-                        {
-                            var askItem = res.payload.asks.SingleOrDefault(p => p.amount == w.amount && p.price == w.askPrice);
-
-                            var bidItem = res.payload.bids.SingleOrDefault(p => p.amount == w.amount && p.price == w.bidPrice);
-
-                            if (askItem == null && bidItem == null)
-                                w.EndDate = DateTime.Now;
-
-                        }
-                    }
-                }
-            };
-        }
 
         public double GetTradingTakerFeeRate()
         {
             return 0.0023;
         }
+
+
     }
 
 
