@@ -28,22 +28,39 @@ namespace Trader.Binance
 
         public List<Fill> fills { get; set; }
 
-        public double? commissionTotal
+
+        //BTC
+        public double? CummulativeFee
         {
             get
             {
                 if (fills == null || fills.Count == 0)
                     return null;
-                return fills.Sum(p=>p.commissionNum);
+                if (side == "BUY")
+                    return fills.Sum(p => p.commissionNum);
+                return fills.Sum(p => p.priceNum != 0 ? p.commissionNum / p.priceNum : 0);
+
             }
         }
-        
+
+        //EURO
+        public double? CummulativeFeeQuote
+        {
+            get
+            {
+                if (fills == null || fills.Count == 0)
+                    return null;
+                if (side == "BUY")
+                    return fills.Sum(p => p.commissionNum * p.priceNum);
+                return fills.Sum(p => p.commissionNum);
+            }
+        }
+
         public class Fill
         {
             public string price { get; set; }
             public string qty { get; set; }
             public string commission { get; set; }
-            public string commissionAsset { get; set; }
 
             public double priceNum { get { return string.IsNullOrWhiteSpace(price) ? 0 : double.Parse(price); } }
             public double qtyNum { get { return string.IsNullOrWhiteSpace(qty) ? 0 : double.Parse(qty); } }

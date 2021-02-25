@@ -10,8 +10,8 @@ using Trader.PostgresDb;
 namespace Trader.Migrations
 {
     [DbContext(typeof(PostgresContext))]
-    [Migration("20210211002649_AddedSellCumulativeQuoteQty")]
-    partial class AddedSellCumulativeQuoteQty
+    [Migration("20210223175756_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -28,6 +28,18 @@ namespace Trader.Migrations
                         .HasColumnType("bigint")
                         .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
 
+                    b.Property<double?>("AfterBuyExchangeAvailableAmount")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("AfterSellExchangeAvailableAmount")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("BeforeBuyExchangeAvailableAmount")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("BeforeSellExchangeAvailableAmount")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("BotRunId")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -35,9 +47,22 @@ namespace Trader.Migrations
                     b.Property<int>("BotVersion")
                         .HasColumnType("integer");
 
+                    b.Property<string>("BuyComment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<double?>("BuyCummulativeFee")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("BuyCummulativeQuoteQty")
+                        .HasColumnType("double precision");
+
                     b.Property<string>("BuyExchange")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<double?>("BuyNetPrice")
+                        .HasColumnType("double precision");
 
                     b.Property<long?>("BuyOrderId")
                         .HasColumnType("bigint");
@@ -52,19 +77,11 @@ namespace Trader.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<string>("BuyType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<double?>("BuyUnitPrice")
                         .HasColumnType("double precision");
 
                     b.Property<DateTime?>("BuyWhenCreated")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("Comment")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
 
                     b.Property<double>("EstBuyFee")
                         .HasColumnType("double precision");
@@ -91,43 +108,44 @@ namespace Trader.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
-                    b.Property<string>("SellClientOrderId")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                    b.Property<double?>("RealProfitNet")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("RealProfitNetRate")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("SellComment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<double?>("SellCummulativeFee")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("SellCummulativeQuoteQty")
+                        .HasColumnType("double precision");
 
                     b.Property<string>("SellExchange")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<double?>("SellExecutedQty")
+                    b.Property<double?>("SellNetPrice")
                         .HasColumnType("double precision");
 
                     b.Property<long?>("SellOrderId")
                         .HasColumnType("bigint");
 
-                    b.Property<long?>("SellOrderListId")
-                        .HasColumnType("bigint");
-
-                    b.Property<double?>("SellOrigQty")
+                    b.Property<double?>("SellOrginalAmount")
                         .HasColumnType("double precision");
 
-                    b.Property<double?>("SellPrice")
+                    b.Property<double?>("SellRemainingAmount")
                         .HasColumnType("double precision");
 
                     b.Property<string>("SellStatus")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<string>("SellTimeInForce")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime?>("SellTransactionTime")
+                    b.Property<DateTime?>("SellWhenCreated")
                         .HasColumnType("timestamp without time zone");
-
-                    b.Property<string>("SellType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
 

@@ -1,13 +1,13 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Trader.Fundamentals;
 
 namespace Trader.PostgresDb
 {
 
     public class Arbitrage
     {
+
 
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -28,6 +28,9 @@ namespace Trader.PostgresDb
         public int BotVersion { get; set; }
         public long Ocid { get; set; }
 
+        [MaxLengthAttribute(20)]
+        public string Pair { get; set; }
+
 
         //Buy exchange
 
@@ -38,10 +41,6 @@ namespace Trader.PostgresDb
         [MaxLengthAttribute(50)]
         public string BuyExchange { get; set; }
 
-
-        [MaxLengthAttribute(20)]
-        public string Pair { get; set; }
-
         public double? BuyUnitPrice { get; set; }
         public double? BuyOrginalAmount { get; set; }
 
@@ -49,49 +48,66 @@ namespace Trader.PostgresDb
 
         [MaxLengthAttribute(50)]
         public string BuyStatus { get; set; }
-        [MaxLengthAttribute(50)]
-        public string BuyType { get; set; }
+
+        [MaxLengthAttribute(1000)]
+        public string BuyComment { get; set; }
+
+        public double? BuyCummulativeQuoteQty { get; set; }
+
+        public double? BuyCummulativeFee { get; set; }
+        public double? BuyCummulativeFeeQuote { get; set; }
+
+        public double? BuyNetPrice { get; set; }
 
 
-        //Buy exchange
+
+        //Sell exchange
         [MaxLengthAttribute(50)]
         public string SellExchange { get; set; }
 
-
-
+        public DateTime? SellWhenCreated { get; set; }
 
         [MaxLengthAttribute(1000)]
-        public string Comment { get; set; }
-        public double? SellOrigQty { get; set; }
-        public long? SellOrderListId { get; set; }
-        public double? SellPrice { get; set; }
+        public string SellComment { get; set; }
+
+        public double? SellOrginalAmount { get; set; }
+        public double? SellRemainingAmount { get; set; }
+
+        public double? SellCummulativeFee { get; set; }
+        public double? SellCummulativeFeeQuote { get; set; }
+
+        public double? SellCummulativeQuoteQty { get; set; }
 
         [MaxLengthAttribute(50)]
         public string SellStatus { get; set; }
 
-        [MaxLengthAttribute(50)]
-        public string SellTimeInForce { get; set; }
-        public DateTime? SellTransactionTime { get; set; }
-
-        [MaxLengthAttribute(50)]
-        public string SellType { get; set; }
-
-        [MaxLengthAttribute(100)]
-        public string SellClientOrderId { get; set; }
-        public double? SellExecutedQty { get; set; }
         public long? SellOrderId { get; set; }
-        public double? SellCummulativeQuoteQty { get; set; }
+
+
+
+
+
 
 
         public bool IsSuccess { get; set; }
         public double? SellNetPrice { get; set; }
-        public double? BuyNetPrice { get; set; }
 
         public double? RealProfitNet { get; set; }
-        public double BeforeSellExchangeAvailableAmount { get; set; }
-        public double BeforeBuyExchangeAvailableAmount { get; set; }
-        public double AfterSellExchangeAvailableAmount { get; set; }
-        public double AfterBuyExchangeAvailableAmount { get; set; }
-        public double? SellCommission { get;  set; }
+        public double? RealProfitNetRate { get; set; }
+
+        public double? BeforeBuyExchangeAvailableBaseAmount { get; set; }
+        public double? BeforeBuyExchangeAvailableQuoteAmount { get; set; }
+
+        public double? AfterBuyExchangeAvailableBaseAmount { get; set; }
+        public double? AfterBuyExchangeAvailableQuoteAmount { get; set; }
+
+        public double? BeforeSellExchangeAvailableBaseAmount { get; set; }
+        public double? BeforeSellExchangeAvailableQuoteAmount { get; set; }
+
+        public double? AfterSellExchangeAvailableBaseAmount { get; set; }
+        public double? AfterSellExchangeAvailableQuoteAmount { get; set; }
+
+        public double? WalletBaseAmountSurplus { get; set; }
+        public double? WalletQuoteAmountSurplus { get;  set; }
     }
 }

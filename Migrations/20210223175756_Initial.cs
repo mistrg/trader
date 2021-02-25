@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 namespace Trader.Migrations
 {
-    public partial class InitialCreate : Migration
+    public partial class Initial : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
@@ -22,28 +22,35 @@ namespace Trader.Migrations
                     BotRunId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     BotVersion = table.Column<int>(type: "integer", nullable: false),
                     Ocid = table.Column<long>(type: "bigint", nullable: false),
+                    Pair = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     BuyOrderId = table.Column<long>(type: "bigint", nullable: true),
                     BuyWhenCreated = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
                     BuyExchange = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    Pair = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     BuyUnitPrice = table.Column<double>(type: "double precision", nullable: true),
                     BuyOrginalAmount = table.Column<double>(type: "double precision", nullable: true),
                     BuyRemainingAmount = table.Column<double>(type: "double precision", nullable: true),
                     BuyStatus = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    BuyType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
+                    BuyComment = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    BuyCummulativeQuoteQty = table.Column<double>(type: "double precision", nullable: true),
+                    BuyCummulativeFee = table.Column<double>(type: "double precision", nullable: true),
+                    BuyNetPrice = table.Column<double>(type: "double precision", nullable: true),
                     SellExchange = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    Comment = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    SellOrigQty = table.Column<double>(type: "double precision", nullable: true),
-                    SellOrderListId = table.Column<long>(type: "bigint", nullable: true),
-                    SellPrice = table.Column<double>(type: "double precision", nullable: true),
+                    SellWhenCreated = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
+                    SellComment = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    SellOrginalAmount = table.Column<double>(type: "double precision", nullable: true),
+                    SellRemainingAmount = table.Column<double>(type: "double precision", nullable: true),
+                    SellCummulativeFee = table.Column<double>(type: "double precision", nullable: true),
+                    SellCummulativeQuoteQty = table.Column<double>(type: "double precision", nullable: true),
                     SellStatus = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    SellTimeInForce = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    SellTransactionTime = table.Column<DateTime>(type: "timestamp without time zone", nullable: true),
-                    SellType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
-                    SellClientOrderId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
-                    SellExecutedQty = table.Column<double>(type: "double precision", nullable: true),
                     SellOrderId = table.Column<long>(type: "bigint", nullable: true),
-                    IsSuccess = table.Column<bool>(type: "boolean", nullable: false)
+                    IsSuccess = table.Column<bool>(type: "boolean", nullable: false),
+                    SellNetPrice = table.Column<double>(type: "double precision", nullable: true),
+                    RealProfitNet = table.Column<double>(type: "double precision", nullable: true),
+                    BeforeSellExchangeAvailableAmount = table.Column<double>(type: "double precision", nullable: true),
+                    BeforeBuyExchangeAvailableAmount = table.Column<double>(type: "double precision", nullable: true),
+                    AfterSellExchangeAvailableAmount = table.Column<double>(type: "double precision", nullable: true),
+                    AfterBuyExchangeAvailableAmount = table.Column<double>(type: "double precision", nullable: true),
+                    RealProfitNetRate = table.Column<double>(type: "double precision", nullable: true)
                 },
                 constraints: table =>
                 {

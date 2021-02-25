@@ -5,7 +5,7 @@ using Trader.Infrastructure;
 public interface IExchangeLogic
 {
     double GetTradingTakerFeeRate();
-    Task<double> GetAvailableAmountAsync(string currency);
+     Task<Tuple<double?,double?>> GetAvailableAmountAsync(string currencyPair);
     Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate);
     Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate);
 }

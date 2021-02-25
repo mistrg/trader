@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Trader.Aax;
 using Trader.Binance;
 using Trader.Coinmate;
+using Trader.Infrastructure;
 using Trader.PostgresDb;
 
 namespace Trader
@@ -27,8 +28,6 @@ namespace Trader
         public static string RunId;
         public static int Version;
 
-
-
         public App(IConfiguration config, Processor processor, PostgresContext context, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter, AaxLogic aaxLogic)
         {
             _aaxLogic = aaxLogic;
@@ -46,36 +45,38 @@ namespace Trader
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 15;
+            Version = 17;
 
             _presenter.ShowInfo($"Trader version {Version} starting runId: {RunId}!");
 
-            await _coinmateLogic.PrintAccountInformationAsync();
 
+            await _coinmateLogic.PrintAccountInformationAsync();
             await _binanceLogic.PrintAccountInformationAsync();
 
-            
-        
-            return ;
 
-            long lastCycle = 0;
+
+//   var buyAvailable = await _coinmateLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
+//     var sellAvailable = await _binanceLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
+
+//     Console.WriteLine($"CM {buyAvailable.Item1} BTC         {buyAvailable.Item2} EURO");
+//     Console.WriteLine($"BI {sellAvailable.Item1} BTC         {sellAvailable.Item2} EURO");
+//     return;
+            // await _coinmateLogic.GetOrderHistoryAsync("BTC_EUR");
+
+            //await _binanceLogic.GetAllOrders("BTCEUR");
+            //    await _binanceLogic.BuyLimitOrderAsync(new OrderCandidate(){Amount = 0.00025, UnitAskPrice = 40500, Pair = "BTCEUR"});
+            //await _coinmateLogic.SellMarketAsync(new OrderCandidate(){Amount = 0.00025, Pair = "BTCEUR"});
+
+
             while (true)
             {
-                if (lastCycle < 620) //We can query coinmate every 0.6 sec
-                {
-                    var x = 620 - (int)lastCycle;
-                    Thread.Sleep(x);
-                }
-
-                var timer = new Stopwatch();
-                timer.Start();
 
                 var bob = await _binanceLogic.GetOrderBookAsync("BTCEUR");
-                var bobe = await _binanceLogic.GetOrderBookAsync("BTCUSDT");
+                //var bobe = await _binanceLogic.GetOrderBookAsync("BTCUSDT");
                 var cob = await _coinmateLogic.GetOrderBookAsync("BTC_EUR");
-                var aob = await _aaxLogic.GetOrderBookAsync("BTCUSDT");
+                //var aob = await _aaxLogic.GetOrderBookAsync("BTCUSDT");
 
-                var db = bob.Union(cob).Union(bobe).Union(aob);
+                var db = bob.Union(cob);//.Union(bobe);//.Union(aob);
 
 
                 foreach (var buyEntry in db.Where(p => !p.InPosition))
@@ -89,6 +90,8 @@ namespace Trader
                             continue;
 
                         var minimalAmount = Math.Round(Math.Min(buyEntry.amount, sellEntry.amount), 6);
+
+
 
                         if (minimalAmount <= 0.0002)
                             continue; //Too small for coinmate
@@ -120,10 +123,7 @@ namespace Trader
                     }
                 }
 
-                timer.Stop();
 
-                TimeSpan timeTaken = timer.Elapsed;
-                lastCycle = timer.ElapsedMilliseconds;
 
             }
 
@@ -176,6 +176,9 @@ namespace Trader
             if (processOrder)
             {
                 await _processor.ProcessOrderAsync(oc);
+                // Console.WriteLine("Waiting after arbitrage");
+                // Console.ReadLine();
+
             }
 
             try

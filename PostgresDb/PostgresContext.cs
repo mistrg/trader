@@ -45,54 +45,50 @@ namespace Trader.PostgresDb
 
         }
 
-        internal void EnrichBuy(Arbitrage arbitrage, Order result)
+        internal void EnrichBuy(Arbitrage arbitrage, BuyResult result)
         {
             if (result != null && arbitrage != null)
             {
-                arbitrage.BuyOrderId = result.id;
-                arbitrage.BuyOrginalAmount = result.originalAmount;
-                arbitrage.BuyRemainingAmount = result.remainingAmount;
-                arbitrage.BuyType = result.orderTradeType;
-                arbitrage.BuyStatus = result.status;
-                arbitrage.BuyUnitPrice = result.price;
+                arbitrage.BuyWhenCreated = Helper.UnixTimeStampToDateTime(result.Timestamp);
+                arbitrage.BuyOrderId = result.OrderId;
+                arbitrage.BuyComment = result.Comment;
+                arbitrage.BuyStatus = result.Status;
+                arbitrage.BuyOrginalAmount = result.OriginalAmount;
+                arbitrage.BuyRemainingAmount = result.RemainingAmount;
+                arbitrage.BuyCummulativeFee = result.CummulativeFee;
+                arbitrage.BuyCummulativeFeeQuote = result.CummulativeFeeQuote;
+                arbitrage.BuyCummulativeQuoteQty = result.CummulativeQuoteQty;
+                arbitrage.BuyUnitPrice = result.Price;
 
-                arbitrage.BuyWhenCreated = Helper.UnixTimeStampToDateTime(result.timestamp);
-
-                //arbitrage.BuyCommission = result.commissionTotal;
-
-
-                arbitrage.BuyNetPrice = arbitrage.BuyUnitPrice * (arbitrage.BuyOrginalAmount - arbitrage.BuyRemainingAmount); // mozna - poplatky
+                arbitrage.BuyNetPrice = (arbitrage.BuyCummulativeQuoteQty ?? 0) - (arbitrage.BuyCummulativeFeeQuote ?? 0);
             }
 
 
         }
 
-        internal void EnrichSell(Arbitrage arbitrage, OrderResponse result)
+        internal void EnrichSell(Arbitrage arbitrage, SellResult result)
         {
             if (result != null && arbitrage != null)
             {
-                arbitrage.SellOrigQty = result.origQtyNum;
-                arbitrage.SellOrderListId = result.orderListId;
 
-                arbitrage.SellPrice = result.priceNum;
-
-                arbitrage.SellStatus = result.status;
-                arbitrage.SellTimeInForce = result.timeInForce;
-                arbitrage.SellTransactionTime = Helper.UnixTimeStampToDateTime(result.transactTime);
-                arbitrage.SellType = result.type;
-                arbitrage.SellClientOrderId = result.clientOrderId;
-                arbitrage.SellCummulativeQuoteQty = result.cummulativeQuoteQtyNum;
-                arbitrage.SellExecutedQty = result.executedQtyNum;
-                arbitrage.SellOrderId = result.orderId;
-
-                arbitrage.SellCommission = result.commissionTotal;
+                arbitrage.SellWhenCreated = Helper.UnixTimeStampToDateTime(result.Timestamp);
+                arbitrage.SellOrderId = result.OrderId;
+                arbitrage.SellComment = result.Comment;
+                arbitrage.SellStatus = result.Status;
+                arbitrage.SellOrginalAmount = result.OriginalAmount;
+                arbitrage.SellRemainingAmount = result.RemainingAmount;
+                arbitrage.SellCummulativeFee = result.CummulativeFee;
+                arbitrage.SellCummulativeFeeQuote = result.CummulativeFeeQuote;
+                arbitrage.SellCummulativeQuoteQty = result.CummulativeQuoteQty;
 
 
+                arbitrage.SellNetPrice = (arbitrage.SellCummulativeQuoteQty ?? 0) - (arbitrage.SellCummulativeFeeQuote ?? 0);
 
-                arbitrage.SellNetPrice = result.cummulativeQuoteQtyNum - (result.commissionTotal ?? 0);
+                arbitrage.RealProfitNet = (arbitrage.SellCummulativeQuoteQty ?? 0) - (arbitrage.BuyCummulativeQuoteQty ?? 0) - (arbitrage.SellCummulativeFeeQuote ?? 0) - (arbitrage.BuyCummulativeFeeQuote ?? 0);
+
+                arbitrage.RealProfitNetRate = arbitrage.SellNetPrice > 0 ? Math.Round(100 * (arbitrage.RealProfitNet ?? 0) / arbitrage.SellNetPrice.Value, 2) : 0;
 
 
-                arbitrage.RealProfitNet = arbitrage.SellNetPrice - arbitrage.BuyNetPrice;
 
             }
         }

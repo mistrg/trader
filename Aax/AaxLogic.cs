@@ -52,17 +52,17 @@ namespace Trader.Aax
              return 0.001;
         }
 
-        public Task<double> GetAvailableAmountAsync(string currency)
-        {
-            throw new System.Exception();
-        }
-
         public Task<System.Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
         {
             throw new System.Exception();
         }
 
         public Task<System.Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate)
+        {
+            throw new System.Exception();
+        }
+
+        public Task<System.Tuple<double?, double?>> GetAvailableAmountAsync(string currencyPair)
         {
             throw new System.Exception();
         }

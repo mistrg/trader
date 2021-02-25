@@ -28,7 +28,7 @@ namespace Trader.Binance
 
         public async Task<AccountInfo> GetAccountInformationAsync()
         {
-            var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() * 1000;
+            var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var pairs = new List<KeyValuePair<string, string>>
             {
@@ -88,24 +88,108 @@ namespace Trader.Binance
             _presenter.ShowInfo(message);
         }
 
-        public async Task<double> GetAvailableAmountAsync(string currency)
+
+        public async Task GetMyTrades(string currencyPair)
+        {
+            var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("timestamp", timestamp.ToString()),
+                new KeyValuePair<string, string>("symbol", currencyPair),
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+            var urlEncodedString = await content.ReadAsStringAsync();
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+
+
+            pairs.Add(new KeyValuePair<string, string>("signature", hashHMACHex));
+            var finalContent = new FormUrlEncodedContent(pairs);
+
+
+            var url = $"{baseUri}myTrades?" + await finalContent.ReadAsStringAsync();
+
+            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+            var result = await httpClient.GetAsync(url);
+
+
+
+            if (!result.IsSuccessStatusCode)
+            {
+                var str = await result.Content.ReadAsStringAsync();
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+            }
+
+            var stri = await result.Content.ReadAsStringAsync();
+            _presenter.ShowInfo(stri);
+            // using (var stream = await result.Content.ReadAsStreamAsync())
+            // {
+            //     var res = await JsonSerializer.DeserializeAsync<AccountInfo>(stream);
+            //     return res;
+            // }
+        }
+
+
+        public async Task GetAllOrders(string currencyPair)
+        {
+            var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("timestamp", timestamp.ToString()),
+                new KeyValuePair<string, string>("symbol", currencyPair),
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+            var urlEncodedString = await content.ReadAsStringAsync();
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+
+
+            pairs.Add(new KeyValuePair<string, string>("signature", hashHMACHex));
+            var finalContent = new FormUrlEncodedContent(pairs);
+
+
+            var url = $"{baseUri}allOrders?" + await finalContent.ReadAsStringAsync();
+
+            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+            var result = await httpClient.GetAsync(url);
+
+
+
+            if (!result.IsSuccessStatusCode)
+            {
+                var str = await result.Content.ReadAsStringAsync();
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+            }
+
+            var stri = await result.Content.ReadAsStringAsync();
+            _presenter.ShowInfo(stri);
+            // using (var stream = await result.Content.ReadAsStreamAsync())
+            // {
+            //     var res = await JsonSerializer.DeserializeAsync<AccountInfo>(stream);
+            //     return res;
+            // }
+        }
+
+
+
+        public async Task<Tuple<double?,double?>> GetAvailableAmountAsync(string currencyPair)
         {
             var biAccount = await GetAccountInformationAsync();
             if (biAccount == null)
             {
                 _presenter.ShowError("Binance account info not accessible");
-                return 0;
+                return new Tuple<double?, double?>(null, null);
             }
-            var item = biAccount.balances.SingleOrDefault(p => p.asset == currency);
-
-            if (item == null)
-            {
-                _presenter.ShowError("Binance BTC balance not accessible");
-                return 0;
-            }
-
-            return item.freeNum;
-
+            var btc = biAccount.balances.SingleOrDefault(p => p.asset == currencyPair.Substring(0,3))?.freeNum;
+            var euro = biAccount.balances.SingleOrDefault(p => p.asset == currencyPair.Substring(3,3))?.freeNum;
+            
+             return new Tuple<double?, double?>(btc, euro);;
         }
 
 
@@ -122,6 +206,8 @@ namespace Trader.Binance
 
                 return new Tuple<bool, SellResult>(true, result);
             }
+            _presenter.ShowInfo($"Let's sell");
+            _presenter.PrintOrderCandidate(orderCandidate);
 
             orderCandidate.Amount = Math.Round(orderCandidate.Amount, 6);
 
@@ -131,17 +217,24 @@ namespace Trader.Binance
                 _presenter.ShowError(comment);
                 result.Comment = comment;
 
-                return new Tuple<bool, SellResult>(true, result);
+                return new Tuple<bool, SellResult>(false, result);
             }
 
 
-            _presenter.ShowInfo("Let's sell");
+
 
             OrderResponse sellResponse = null;
             try
             {
                 sellResponse = await SellMarketAsync(orderCandidate.Pair, orderCandidate.Amount, orderCandidate.Id);
                 result.Status = sellResponse.status;
+                result.OrderId = sellResponse.orderId;
+                result.OriginalAmount = sellResponse.origQtyNum;
+                result.RemainingAmount = sellResponse.origQtyNum - sellResponse.executedQtyNum;
+                result.CummulativeFee = sellResponse.CummulativeFee ?? 0;
+                result.CummulativeFeeQuote = sellResponse.CummulativeFeeQuote ?? 0;
+                result.CummulativeQuoteQty = sellResponse.cummulativeQuoteQtyNum;
+                result.Timestamp = sellResponse.transactTime;
 
             }
             catch (System.Exception ex)
@@ -153,7 +246,7 @@ namespace Trader.Binance
 
             }
 
-            if (result == null)
+            if (sellResponse == null)
             {
                 var comment = $"SellMarketAsync failed. Result is null.";
                 _presenter.ShowPanic(comment);
@@ -162,23 +255,20 @@ namespace Trader.Binance
             }
 
 
-            _presenter.ShowInfo($"{DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss")} {result.side} {result.type} OrderId {result.orderId} OCID {result.clientOrderId}  price: {result.price} symbol: {result.symbol} Qty: {result.executedQty}/{result.origQty} cumQty: {result.cummulativeQuoteQty}");
-
             if (result.Status == "FILLED")
-                _presenter.ShowInfo("Successfully sold");
+                _presenter.ShowInfo($"Sell successful");
             else
-            {
-                _presenter.ShowPanic("Check line above for problems");
-            }
+                _presenter.ShowInfo($"Sell result not clear");
 
-            return new Tuple<bool, SellResult>(result.status == "FILLED", result);
+
+            return new Tuple<bool, SellResult>(result.Status == "FILLED", result);
         }
 
 
         private async Task<OrderResponse> SellMarketAsync(string currencyPair, double amount, long clientOrderId)
         {
 
-            var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() * 1000;
+            var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var pairs = new List<KeyValuePair<string, string>>
             {
@@ -229,25 +319,105 @@ namespace Trader.Binance
 
 
 
-        private async Task<OrderResponse> BuyLimitOrderAsync(OrderCandidate orderCandidate)
+
+        public async Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
+        {
+            var result = new BuyResult();
+
+
+            if (!Config.ProcessTrades)
+            {
+                var comment = "BuyLimitOrderAsync skipped. ProcessTrades is not activated";
+                _presenter.Warning(comment);
+                result.Comment = comment;
+
+                return new Tuple<bool, BuyResult>(true, result);
+            }
+
+
+            orderCandidate.Amount = Math.Round(orderCandidate.Amount, 6);
+            _presenter.ShowInfo("Let's buy");
+            _presenter.PrintOrderCandidate(orderCandidate);
+
+            if (orderCandidate.Amount <= 0)
+            {
+                result.Comment = "BuyLimitOrderAsync skipped. Amount too small";
+                _presenter.ShowError(result.Comment);
+
+                return new Tuple<bool, BuyResult>(false, result);
+            }
+
+
+
+            OrderResponse buyResponse = null;
+            try
+            {
+                buyResponse = await BuyLimitOrderAsync(orderCandidate.Pair, orderCandidate.Amount, orderCandidate.UnitAskPrice, orderCandidate.Id);
+
+                result.Status = buyResponse.status;
+                result.OrderId = buyResponse.orderId;
+                result.OriginalAmount = buyResponse.origQtyNum;
+                result.RemainingAmount = buyResponse.origQtyNum - buyResponse.executedQtyNum;
+                result.CummulativeFee = buyResponse.CummulativeFee ?? 0;
+                result.CummulativeFeeQuote = buyResponse.CummulativeFeeQuote ?? 0;
+                result.CummulativeQuoteQty = buyResponse.cummulativeQuoteQtyNum;
+                result.Price = buyResponse.priceNum;
+                result.Timestamp = buyResponse.transactTime;
+            }
+            catch (System.Exception ex)
+            {
+                result.Comment = $"BuyLimitOrderAsync failed. {ex}. Please check binance manually.";
+
+                _presenter.ShowPanic(result.Comment);
+
+                return new Tuple<bool, BuyResult>(false, result);
+
+            }
+
+            if (result == null)
+            {
+                result.Comment = $"BuyLimitOrderAsync failed. Result is null.";
+                _presenter.ShowError(result.Comment);
+                return new Tuple<bool, BuyResult>(false, result);
+            }
+
+
+            orderCandidate.Amount = orderCandidate.Amount - result.RemainingAmount.Value - result.CummulativeFee;
+
+
+            var boughtSomething = orderCandidate.Amount > 0;
+
+            if (boughtSomething)
+                _presenter.ShowInfo("Buy succssful");
+            else
+                _presenter.ShowInfo($"Buy not done");
+
+
+
+            return new Tuple<bool, BuyResult>(boughtSomething, result);
+        }
+
+
+        private async Task<OrderResponse> BuyLimitOrderAsync(string pair, double amount, double price, long ocid)
         {
 
-            var timestamp = DateTimeOffset.Now.ToUnixTimeSeconds() * 1000;
+            var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var pairs = new List<KeyValuePair<string, string>>
             {
                 new KeyValuePair<string, string>("timestamp", timestamp.ToString()),
 
-                new KeyValuePair<string, string>("symbol", orderCandidate.Pair),
+                new KeyValuePair<string, string>("symbol", pair),
                 new KeyValuePair<string, string>("side", "BUY"),
-                new KeyValuePair<string, string>("quantity", string.Format("{0:0.##############}", orderCandidate.Amount)),
-                new KeyValuePair<string, string>("price", string.Format("{0:0.##############}", orderCandidate.UnitAskPrice)),
-                new KeyValuePair<string, string>("timeInForce", "GTC"),
+                new KeyValuePair<string, string>("type", "LIMIT"),
+                new KeyValuePair<string, string>("quantity", string.Format("{0:0.##############}", amount)),
+                new KeyValuePair<string, string>("price", string.Format("{0:0.##############}", price)),
+                new KeyValuePair<string, string>("timeInForce", "IOC"),
 
 
                 new KeyValuePair<string, string>("newOrderRespType","FULL"),
                 //new KeyValuePair<string, string>("recvWindow","5000"), 
-                new KeyValuePair<string, string>("newClientOrderId",orderCandidate.Id.ToString()),
+                new KeyValuePair<string, string>("newClientOrderId",ocid.ToString()),
 
 
             };
@@ -283,6 +453,8 @@ namespace Trader.Binance
                 return res;
             }
         }
+
+
 
 
 
@@ -386,11 +558,6 @@ namespace Trader.Binance
         {
             return 0.001;
 
-        }
-
-        Task<Tuple<bool, BuyResult>> IExchangeLogic.BuyLimitOrderAsync(OrderCandidate orderCandidate)
-        {
-            throw new Exception();
         }
 
     }

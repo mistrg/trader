@@ -17,9 +17,16 @@ Work Log
 10.2.2021 Get all transactions and orders,write trades to relation database,get order and transactions from binance and coinmate
 11.2.2021 Fixed problems with duplicate order candidates [Version 12], problem resolutions,One cycle decission BUY / NO BUY,Implement email solution,verify that we have enough on exchanges before trade
 20.2.2021 Better logging so that we understand why we didn't trade, working on generic buy and sell exchnages
-21.2.2021 3890 Lines of code, further refactoring and generalisations
+21.2.2021 [3890] Lines of code, further refactoring and generalisations, 
+22.2.2021 [4215] Creating common BuyResult and SellResult, understanding BuyLimit structure and changing Fees and CumulativeQty accordingly, buy on Binance tested,
+23.2.2021 [] Handling BI states, ensure nice  buy and sell status message, write BuyResult and SellResult to arbitrage, ensure Coinmate not asked too often e.g. on Wallet check after trade, 
+24.2.2021 [] Big test session
+25.2.2021 BI lower orginal amount to be sold on CM by the cumulative fee, Extend arbitrage with wallet differences Euro, BTC, Fix RealProfitNet using Earning -Costs
 
-TECH add logging framework to protocol all htttp requests
+
+
+
+
 
 
 
@@ -33,3 +40,7 @@ This means that we pay exactly 20000 Euro but only get 0.499998 BTC. On the Sell
 TODO
 x TECH Why some trades from 11.2. ended in open position => bot crash + minimum amount
 x TECH Why order candidates  from 11.2. were too positive  => wrong timing
+
+
+
+git ls-files | where {$_.EndsWith(".cs") }| %{ Get-Content -Path $_ } | measure

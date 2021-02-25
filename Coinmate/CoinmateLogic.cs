@@ -21,10 +21,9 @@ namespace Trader.Coinmate
 
         private readonly Presenter _presenter;
 
-        private string uri = "wss://coinmate.io/api/websocket/channel/order-book/";
         private string baseUri = "https://coinmate.io/api/";
 
-
+        private DateTime lastApiCall = DateTime.Now.AddDays(-1);
         public List<string> Pairs { get; }
 
 
@@ -42,10 +41,25 @@ namespace Trader.Coinmate
             return shortPair;
         }
 
+
+        private void Throtle()
+        {
+            var now = DateTime.Now;
+            var sinceLastApiCall = (now - lastApiCall).TotalMilliseconds;
+
+            if (sinceLastApiCall < 650)
+            {
+                var x = 650 - (int)sinceLastApiCall;
+                Thread.Sleep(x);
+            }
+
+            lastApiCall = DateTime.Now;
+        }
+
         public async Task<BalanceResponse> GetBalancesAsync()
         {
 
-            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -61,6 +75,8 @@ namespace Trader.Coinmate
             };
 
             var content = new FormUrlEncodedContent(pairs);
+
+            Throtle();
 
             var result = await httpClient.PostAsync(baseUri + "balances", content);
 
@@ -78,31 +94,29 @@ namespace Trader.Coinmate
 
         }
 
-        public async Task<double> GetAvailableAmountAsync(string currency)
+        public async Task<Tuple<double?, double?>> GetAvailableAmountAsync(string currencyPair)
         {
             var cmAccount = await GetBalancesAsync();
             if (cmAccount?.data == null)
             {
                 _presenter.ShowError("Coinmate account info not accessible");
-                return 0;
-            }
-            var item = cmAccount.data.SingleOrDefault(p => p.Key == currency);
-
-            if (item.Equals(default(KeyValuePair<string, BalanceResponse>)) || item.Key == null)
-            {
-                _presenter.ShowError($"Coinmate {currency} balance not accessible");
-                return 0;
+                return new Tuple<double?, double?>(null, null);
             }
 
-            return item.Value?.available ?? 0;
+            var btc = cmAccount.data.SingleOrDefault(p => p.Key == currencyPair.Substring(0, 3));
+            var euro = cmAccount.data.SingleOrDefault(p => p.Key == currencyPair.Substring(3, 3));
+
+            return new Tuple<double?, double?>(btc.Value?.available, euro.Value?.available);
         }
 
         public async Task PrintAccountInformationAsync()
         {
+
+
             var result = await GetBalancesAsync();
             if (result == null || result.data == null)
             {
-                _presenter.ShowError("Could not get balances on Coinmat.");
+                _presenter.ShowError("Could not get balances on Coinmate." + result.errorMessage);
                 return;
             }
             var message = "CM balances/available: ";
@@ -124,6 +138,8 @@ namespace Trader.Coinmate
             var upair = pair.Replace("_", "");
             try
             {
+                Throtle();
+
                 var res = await httpClient.GetFromJsonAsync<OrderBookResponse>($"{baseUri}orderBook?currencyPair={pair}&groupByPriceLimit=False");
 
                 if (res?.data == null)
@@ -146,7 +162,7 @@ namespace Trader.Coinmate
         }
         public async Task<Order> GetOrderByOrderIdAsync(long orderId)
         {
-            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -163,6 +179,8 @@ namespace Trader.Coinmate
             };
 
             var content = new FormUrlEncodedContent(pairs);
+
+            Throtle();
 
             var result = await httpClient.PostAsync(baseUri + "orderById", content);
 
@@ -181,9 +199,9 @@ namespace Trader.Coinmate
 
         }
 
-        public async Task GetTradeHistoryAsync(long? orderId)
+        public async Task<TradeHistoryResponse> GetTradeHistoryAsync(long? orderId)
         {
-            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -202,6 +220,8 @@ namespace Trader.Coinmate
                 pairs.Add(new KeyValuePair<string, string>("orderId", orderId.ToString()));
 
             var content = new FormUrlEncodedContent(pairs);
+
+            Throtle();
 
             var result = await httpClient.PostAsync(baseUri + "tradeHistory", content);
 
@@ -212,12 +232,25 @@ namespace Trader.Coinmate
             var resa = await result.Content.ReadAsStringAsync();
             _presenter.ShowInfo(resa);
 
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<TradeHistoryResponse>(stream);
+
+                //     foreach (var item in res.data)
+                // {
+                //     Console.WriteLine($"transactionType: {item.transactionType} orderId:{item.orderId} fee:{item.fee} feeCurrency:{item.feeCurrency} amount:{item.amount} amountCurrency:{item.amountCurrency} price:{item.price} priceCurrency:{item.priceCurrency}");
+                // }
+
+                return res;
+
+            }
+
 
 
         }
         public async Task<TransactionHistoryResponse> GetTransactionHistoryAsync(long? orderId)
         {
-            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -236,6 +269,8 @@ namespace Trader.Coinmate
                 pairs.Add(new KeyValuePair<string, string>("orderId", orderId.ToString()));
 
             var content = new FormUrlEncodedContent(pairs);
+
+            Throtle();
 
             var result = await httpClient.PostAsync(baseUri + "transactionHistory", content);
 
@@ -263,7 +298,7 @@ namespace Trader.Coinmate
 
         public async Task<List<OrderHistory>> GetOrderHistoryAsync(string currencyPair)
         {
-            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -280,6 +315,8 @@ namespace Trader.Coinmate
             };
 
             var content = new FormUrlEncodedContent(pairs);
+
+            Throtle();
 
             var result = await httpClient.PostAsync(baseUri + "orderHistory", content);
 
@@ -299,7 +336,7 @@ namespace Trader.Coinmate
 
         public async Task<CancelOrderResponse> CancelOrderAsync(long orderId)
         {
-            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -315,6 +352,7 @@ namespace Trader.Coinmate
             };
 
             var content = new FormUrlEncodedContent(pairs);
+            Throtle();
 
             var result = await httpClient.PostAsync(baseUri + "cancelOrder", content);
 
@@ -329,6 +367,7 @@ namespace Trader.Coinmate
             }
         }
 
+
         public async Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
         {
             var result = new BuyResult();
@@ -341,6 +380,7 @@ namespace Trader.Coinmate
 
                 return new Tuple<bool, BuyResult>(true, result);
             }
+            _presenter.ShowInfo($"Let's buy");
 
             _presenter.PrintOrderCandidate(orderCandidate);
 
@@ -402,10 +442,15 @@ namespace Trader.Coinmate
             {
                 try
                 {
-                    Thread.Sleep(480); // Coinmate throtling
                     response = GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
                     result.Status = response.status;
+                    result.Timestamp = response.timestamp;
+
+
+
+                    result.OriginalAmount = response.originalAmount;
                     result.RemainingAmount = response.remainingAmount;
+                    result.Price = response.price ?? 0;
                 }
                 catch (Exception ex)
                 {
@@ -433,6 +478,8 @@ namespace Trader.Coinmate
                     else
                     {
                         orderCandidate.Amount -= result.RemainingAmount.Value;
+                        await UpdateBuyResult(result);
+
                         var comment = $"Order is cancelled but there is an open position, that we need to sell. Amount adjusted  to {orderCandidate.Amount}.";
                         _presenter.ShowInfo(comment);
                         result.Comment = comment;
@@ -464,7 +511,7 @@ namespace Trader.Coinmate
                     var comment = $"CancelOrderAsync  exited with wrong errorcode. Assuming the trade was finished.";
                     _presenter.ShowPanic(comment);
                     result.Comment = comment;
-                    return new Tuple<bool, BuyResult>(true, result);
+                    return new Tuple<bool, BuyResult>(false, result);
                 }
             }
 
@@ -480,75 +527,47 @@ namespace Trader.Coinmate
 
                 orderCandidate.Amount -= result.RemainingAmount.Value;
 
-                // _presenter.ShowInfo($"Successful partial {result.orderTradeType} {result.originalAmount}+{result.RemainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price})  on {orderCandidate.BuyExchange} status {result.Status}. SellAmount updated.");
-            }
-            else
-            {
-                //  _presenter.ShowInfo($"Successful {result.orderTradeType} {result.originalAmount}+{result.RemainingAmount}={orderCandidate.Amount} {orderCandidate.Pair} for {orderCandidate.TotalAskPrice} ( UnitPrice: {result.price}) on {orderCandidate.BuyExchange} status {result.Status}");
-            }
-
-            //Check the fees
-            try
-            {
-                var fees = await GetTransactionHistoryAsync(result.OrderId);
-                if (fees != null && fees.data != null && fees.data.Count > 0)
-                {
-                    result.Fee = fees.data.Sum(p => p.fee ?? 0);
-                    result.FeeCurrency = fees.data.FirstOrDefault().feeCurrency;
-                }
-            }
-            catch (System.Exception ex)
-            {
-                 var comment = $"Can not determine fees. " + ex;
-                _presenter.ShowError(comment);
-                result.Comment = comment;
-                return new Tuple<bool, BuyResult>(true, result);
-
-
             }
 
 
+            await UpdateBuyResult(result);
+
+            _presenter.ShowInfo($"Buy successful");
 
             return new Tuple<bool, BuyResult>(true, result);
 
         }
 
-        private async Task<BuyResponse> BuyInstant(string currencyPair, double amountToPayInSecondCurrency)
+
+        private async Task UpdateBuyResult(BuyResult result)
         {
-            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
-
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
-
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
-
-            var pairs = new List<KeyValuePair<string, string>>
+            //Check the fees
+            try
             {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
-                new KeyValuePair<string, string>("total", string.Format("{0:0.##############}", amountToPayInSecondCurrency)),
-                new KeyValuePair<string, string>("currencyPair", currencyPair)
-            };
+                var th = await GetTradeHistoryAsync(result.OrderId);
+                if (th != null && th.data != null && th.data.Count > 0)
+                {
+                    result.CummulativeFee = th.data.Sum(p => p.price != 0 ? p.fee / p.price : 0);
+                    result.CummulativeFeeQuote = th.data.Sum(p => p.fee);
+                    result.CummulativeQuoteQty = th.data.Sum(p => p.price * p.amount);
 
-            var content = new FormUrlEncodedContent(pairs);
-
-            var result = await httpClient.PostAsync(baseUri + "buyInstant", content);
-            if (!result.IsSuccessStatusCode)
-                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
-
-
-            using (var stream = await result.Content.ReadAsStreamAsync())
-            {
-                var res = await JsonSerializer.DeserializeAsync<BuyResponse>(stream);
-                return res;
+                }
             }
+            catch (System.Exception ex)
+            {
+                var comment = $"Can not determine fees. " + ex;
+                _presenter.ShowError(comment);
+                result.Comment = comment;
 
+
+            }
         }
+
+
 
         private async Task<BuyResponse> BuyLimitOrderAsync(string currencyPair, double amount, double price, long clientOrderId)
         {
-            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -569,6 +588,7 @@ namespace Trader.Coinmate
             };
 
             var content = new FormUrlEncodedContent(pairs);
+            Throtle();
 
             var result = await httpClient.PostAsync(baseUri + "buyLimit", content);
 
@@ -596,6 +616,7 @@ namespace Trader.Coinmate
 
                 return new Tuple<bool, SellResult>(true, result);
             }
+            _presenter.ShowInfo($"Let's sell");
 
             _presenter.PrintOrderCandidate(orderCandidate);
 
@@ -657,11 +678,13 @@ namespace Trader.Coinmate
             {
                 try
                 {
-                    Thread.Sleep(480); // Coinmate throtling
+
                     response = GetOrderByOrderIdAsync(result.OrderId).Result;
                     result.Status = response.status;
                     result.RemainingAmount = response.remainingAmount;
                     result.OriginalAmount = response.originalAmount;
+                    result.Timestamp = response.timestamp;
+
                 }
                 catch (Exception ex)
                 {
@@ -676,21 +699,23 @@ namespace Trader.Coinmate
 
             if (!sellSuccess)
             {
-                var comment = $"Sell was not succeful.OrderId: {result.OrderId} Status: {result.Status} Please check the coinmate platform manually...Process cancel...";
+                var comment = $"Sell was not succeful. {orderCandidate.SellExchange} OrderId: {result.OrderId} Status: {result.Status} Please check the coinmate platform manually...Process cancel...";
                 _presenter.ShowPanic(comment);
                 result.Comment = comment;
                 return new Tuple<bool, SellResult>(false, result);
             }
 
 
-            //Check the fees
             try
             {
-                var fees = await GetTransactionHistoryAsync(result.OrderId);
-                if (fees != null && fees.data != null && fees.data.Count > 0)
+
+                var th = await GetTradeHistoryAsync(result.OrderId);
+                if (th != null && th.data != null && th.data.Count > 0)
                 {
-                    result.Fee = fees.data.Sum(p => p.fee ?? 0);
-                    result.FeeCurrency = fees.data.FirstOrDefault().feeCurrency;
+                    result.CummulativeFee = th.data.Sum(p => p.price != 0 ? p.fee / p.price : 0);
+                    result.CummulativeFeeQuote = th.data.Sum(p => p.fee);
+                    result.CummulativeQuoteQty = th.data.Sum(p => p.price * p.amount);
+
                 }
             }
             catch (System.Exception ex)
@@ -698,11 +723,10 @@ namespace Trader.Coinmate
                 var comment = $"Can not determine fees. " + ex;
                 _presenter.ShowError(comment);
                 result.Comment = comment;
-                return new Tuple<bool, SellResult>(true, result);
 
             }
 
-            _presenter.ShowInfo($"Sell successful  {result.OriginalAmount}+{result.RemainingAmount}={orderCandidate.Amount} {orderCandidate.Pair}  on {orderCandidate.BuyExchange} status {result.Status}");
+            _presenter.ShowInfo($"Sell successful");
 
 
             return new Tuple<bool, SellResult>(true, result);
@@ -712,7 +736,7 @@ namespace Trader.Coinmate
 
         private async Task<SellInstantOrderResponse> SellMarketAsync(string currencyPair, double amount, long clientOrderId)
         {
-            var nonce = DateTimeOffset.Now.ToUnixTimeSeconds();
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
             var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
@@ -733,6 +757,8 @@ namespace Trader.Coinmate
 
             var content = new FormUrlEncodedContent(pairs);
 
+            Throtle();
+
             var result = await httpClient.PostAsync(baseUri + "sellInstant", content);
 
             if (!result.IsSuccessStatusCode)
@@ -746,11 +772,44 @@ namespace Trader.Coinmate
         }
 
 
-
-
         public double GetTradingTakerFeeRate()
         {
             return 0.0023;
+        }
+
+        private async Task<BuyResponse> BuyInstant(string currencyPair, double amountToPayInSecondCurrency)
+        {
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+                new KeyValuePair<string, string>("nonce", nonce.ToString()),
+                new KeyValuePair<string, string>("signature", hashHMACHex),
+                new KeyValuePair<string, string>("total", string.Format("{0:0.##############}", amountToPayInSecondCurrency)),
+                new KeyValuePair<string, string>("currencyPair", currencyPair)
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+
+            Throtle();
+
+            var result = await httpClient.PostAsync(baseUri + "buyInstant", content);
+            if (!result.IsSuccessStatusCode)
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<BuyResponse>(stream);
+                return res;
+            }
+
         }
 
 
