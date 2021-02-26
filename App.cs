@@ -176,8 +176,6 @@ namespace Trader
             if (processOrder)
             {
                 await _processor.ProcessOrderAsync(oc);
-                // Console.WriteLine("Waiting after arbitrage");
-                // Console.ReadLine();
 
             }
 
