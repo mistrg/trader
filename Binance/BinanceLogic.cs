@@ -382,13 +382,13 @@ namespace Trader.Binance
             }
 
 
-            orderCandidate.Amount = orderCandidate.Amount - result.RemainingAmount.Value - result.CummulativeFee;
+            orderCandidate.Amount = (result.OriginalAmount ??0 )  - result.RemainingAmount.Value - result.CummulativeFee;
 
 
-            var boughtSomething = orderCandidate.Amount > 0;
+            var boughtSomething = Math.Round(orderCandidate.Amount, 6) > 0;
 
             if (boughtSomething)
-                _presenter.ShowInfo("Buy succssful");
+                _presenter.ShowInfo("Buy successful");
             else
                 _presenter.ShowInfo($"Buy not done");
 
@@ -490,7 +490,7 @@ namespace Trader.Binance
             }
             catch
             {
-                throw;
+                
             }
             return result;
 

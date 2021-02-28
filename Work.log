@@ -22,12 +22,11 @@ Work Log
 23.2.2021 [] Handling BI states, ensure nice  buy and sell status message, write BuyResult and SellResult to arbitrage, ensure Coinmate not asked too often e.g. on Wallet check after trade, 
 24.2.2021 [] Big test session
 25.2.2021 BI lower orginal amount to be sold on CM by the cumulative fee, Extend arbitrage with wallet differences Euro, BTC, Fix RealProfitNet using Earning -Costs
+28.2.2021 The minimum price on buy and sell implemented to 11 Euro.  Binance order book http problem solved. 
 
 
-
-
-
-
+Check why wallet and real profit does not match
+Fix this bug
 
 
 

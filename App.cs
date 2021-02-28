@@ -45,7 +45,7 @@ namespace Trader
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 17;
+            Version = 18;
 
             _presenter.ShowInfo($"Trader version {Version} starting runId: {RunId}!");
 
@@ -95,6 +95,13 @@ namespace Trader
 
                         if (minimalAmount <= 0.0002)
                             continue; //Too small for coinmate
+                        
+                        
+                        if (sellEntry.bidPrice.Value * minimalAmount <= 11) // Price more then 11 Euros
+                            continue;
+                        if (buyEntry.askPrice.Value * minimalAmount <= 11) // Price more then 11 Euros
+                            continue;
+
 
                         var estProfitGross = Math.Round(sellEntry.bidPrice.Value * minimalAmount - buyEntry.askPrice.Value * minimalAmount, 2);
 
