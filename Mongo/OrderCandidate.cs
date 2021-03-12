@@ -1,8 +1,12 @@
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class OrderCandidate
 {
-    public long Id {get;}
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    public long Id { get; }
     public DateTime WhenCreated { get; set; }
 
     public DateTime WhenBuySpoted { get; set; }
@@ -32,9 +36,9 @@ public class OrderCandidate
     public double EstProfitNetRate { get; set; }
     public string BotRunId { get; internal set; }
     public int BotVersion { get; internal set; }
-    public double EstBuyFee {get;set;}
+    public double EstBuyFee { get; set; }
 
-    public double EstSellFee {get;set;}
+    public double EstSellFee { get; set; }
 
     public OrderCandidate()
     {

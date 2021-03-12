@@ -319,6 +319,61 @@ namespace Trader.Binance
 
 
 
+        private async Task<OrderResponse> SellOcoAsync(string currencyPair, double amount,double price, double stopPrice,  long clientOrderId)
+        {
+
+            var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            var pairs = new List<KeyValuePair<string, string>>
+            {
+                new KeyValuePair<string, string>("timestamp", timestamp.ToString()),
+
+                new KeyValuePair<string, string>("symbol", currencyPair),
+                new KeyValuePair<string, string>("side", "SELL"),
+                new KeyValuePair<string, string>("quantity", string.Format("{0:0.##############}", amount)),
+                new KeyValuePair<string, string>("price", string.Format("{0:0.##############}", price)),
+                new KeyValuePair<string, string>("stopPrice", string.Format("{0:0.##############}", stopPrice)),
+
+                new KeyValuePair<string, string>("stopLimitTimeInForce","GTC"),
+                new KeyValuePair<string, string>("newOrderRespType","FULL"),
+                //new KeyValuePair<string, string>("recvWindow","5000"), 
+                new KeyValuePair<string, string>("newClientOrderId",clientOrderId.ToString()),
+
+
+            };
+
+            var content = new FormUrlEncodedContent(pairs);
+            var urlEncodedString = await content.ReadAsStringAsync();
+
+            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+
+
+
+
+
+            pairs.Add(new KeyValuePair<string, string>("signature", hashHMACHex));
+            var finalContent = new FormUrlEncodedContent(pairs);
+
+
+
+            finalContent.Headers.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+
+            var result = await httpClient.PostAsync(baseUri + "oco", finalContent);
+
+            if (!result.IsSuccessStatusCode)
+            {
+                var str = await result.Content.ReadAsStringAsync();
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} - {result.ReasonPhrase} - {str}");
+            }
+
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<OrderResponse>(stream);
+                return res;
+            }
+        }
+
 
         public async Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
         {
