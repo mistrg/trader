@@ -45,7 +45,7 @@ namespace Trader
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 18;
+            Version = 19;
 
             _presenter.ShowInfo($"Trader version {Version} starting runId: {RunId}!");
 

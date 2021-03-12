@@ -15,6 +15,8 @@ namespace Trader
         private readonly Presenter _presenter;
         private readonly CoinmateLogic _coinmateLogic;
         private readonly BinanceLogic _binanceLogic;
+
+        private bool LowCreditWarningSent = false;
         public Processor(PostgresContext context, Presenter presenter, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic)
         {
             _context = context;
@@ -50,7 +52,12 @@ namespace Trader
             {
                 var message = $"{orderCandidate.BuyExchange} balance of {arbitrage.BeforeBuyExchangeAvailableQuoteAmount } EURO too low for trade (required {(orderCandidate.Amount * orderCandidate.UnitAskPrice) + orderCandidate.EstBuyFee} EURO). Process cancel...";
                 _presenter.ShowError(message);
-                await _presenter.SendMessageAsync($"Not enough EURO balance on {orderCandidate.BuyExchange}", message);
+
+                if (!LowCreditWarningSent)
+                {
+                    LowCreditWarningSent = true;
+                    await _presenter.SendMessageAsync($"Not enough EURO balance on {orderCandidate.BuyExchange}", message);
+                }
                 return;
             }
 
@@ -66,7 +73,11 @@ namespace Trader
             {
                 var message = $"{orderCandidate.SellExchange} balance of {arbitrage.BeforeSellExchangeAvailableBaseAmount } BTC too low for trade (required {orderCandidate.Amount} BTC). Process cancel...";
                 _presenter.ShowError(message);
-                await _presenter.SendMessageAsync($"Not enough BTC balance on {orderCandidate.SellExchange}", message);
+                if (!LowCreditWarningSent)
+                {
+                    LowCreditWarningSent = true;
+                    await _presenter.SendMessageAsync($"Not enough BTC balance on {orderCandidate.SellExchange}", message);
+                }
                 return;
             }
 

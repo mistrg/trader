@@ -468,7 +468,7 @@ namespace Trader.Coinmate
 
                 if (result?.Status == "CANCELLED")
                 {
-                    if (result?.RemainingAmount == null || result?.RemainingAmount.Value == 0)
+                    if (result?.RemainingAmount == result?.OriginalAmount )
                     {
                         var comment = "Order was already cancelled successfully.Process cancel...";
                         _presenter.ShowInfo(comment);
