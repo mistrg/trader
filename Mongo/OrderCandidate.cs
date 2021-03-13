@@ -4,8 +4,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 public class OrderCandidate
 {
-    [Key]
-    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    // [Key]
+    // [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
     public long Id { get; }
     public DateTime WhenCreated { get; set; }
 
