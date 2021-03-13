@@ -1,7 +1,4 @@
 using System;
-using System.Linq;
-using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
 using Trader.Binance;
 using Trader.Coinmate;
@@ -31,26 +28,20 @@ namespace Trader
 
             if (!((orderCandidate.BuyExchange == nameof(Trader.Coinmate) && orderCandidate.SellExchange == nameof(Trader.Binance)) ||
             (orderCandidate.BuyExchange == nameof(Trader.Binance) && orderCandidate.SellExchange == nameof(Trader.Coinmate))))
-
-            //if (!(orderCandidate.BuyExchange == nameof(Trader.Coinmate) && orderCandidate.SellExchange == nameof(Trader.Binance)))
             {
                 _presenter.ShowError($"Unsupported exchnages. Cannot buy on {orderCandidate.BuyExchange} and sell on {orderCandidate.SellExchange} Process cancel...");
                 return;
             }
 
-
-            var arbitrage = _context.MakeArbitrageObj(orderCandidate);
-            _context.Arbitrages.Add(arbitrage);
-
             var buyLogic = ResolveExchangeLogic(orderCandidate.BuyExchange);
             var buyAvailable = await buyLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
 
-            arbitrage.BeforeBuyExchangeAvailableBaseAmount = buyAvailable.Item1;
-            arbitrage.BeforeBuyExchangeAvailableQuoteAmount = buyAvailable.Item2;
+            var beforeBuyExchangeAvailableBaseAmount = buyAvailable.Item1;
+            var beforeBuyExchangeAvailableQuoteAmount = buyAvailable.Item2;
 
-            if (arbitrage.BeforeBuyExchangeAvailableQuoteAmount < (orderCandidate.Amount * orderCandidate.UnitAskPrice) + orderCandidate.EstBuyFee)
+            if (beforeBuyExchangeAvailableQuoteAmount == null || beforeBuyExchangeAvailableQuoteAmount < (orderCandidate.Amount * orderCandidate.UnitAskPrice) + orderCandidate.EstBuyFee)
             {
-                var message = $"{orderCandidate.BuyExchange} balance of {arbitrage.BeforeBuyExchangeAvailableQuoteAmount } EURO too low for trade (required {(orderCandidate.Amount * orderCandidate.UnitAskPrice) + orderCandidate.EstBuyFee} EURO). Process cancel...";
+                var message = $"{orderCandidate.BuyExchange} balance of {beforeBuyExchangeAvailableQuoteAmount } EURO too low for trade (required {(orderCandidate.Amount * orderCandidate.UnitAskPrice) + orderCandidate.EstBuyFee} EURO). Process cancel...";
                 _presenter.ShowError(message);
 
                 if (!LowCreditWarningSent)
@@ -67,11 +58,11 @@ namespace Trader
 
             var sellAvailable = await sellLogic.GetAvailableAmountAsync("BTCEUR"); //Always selling BTC for EUR
 
-            arbitrage.BeforeSellExchangeAvailableBaseAmount = sellAvailable.Item1;
-            arbitrage.BeforeSellExchangeAvailableQuoteAmount = sellAvailable.Item2;
-            if (arbitrage.BeforeSellExchangeAvailableBaseAmount < orderCandidate.Amount)
+            var beforeSellExchangeAvailableBaseAmount = sellAvailable.Item1;
+            var beforeSellExchangeAvailableQuoteAmount = sellAvailable.Item2;
+            if (beforeSellExchangeAvailableBaseAmount == null || beforeSellExchangeAvailableBaseAmount < orderCandidate.Amount)
             {
-                var message = $"{orderCandidate.SellExchange} balance of {arbitrage.BeforeSellExchangeAvailableBaseAmount } BTC too low for trade (required {orderCandidate.Amount} BTC). Process cancel...";
+                var message = $"{orderCandidate.SellExchange} balance of {beforeSellExchangeAvailableBaseAmount } BTC too low for trade (required {orderCandidate.Amount} BTC). Process cancel...";
                 _presenter.ShowError(message);
                 if (!LowCreditWarningSent)
                 {
@@ -84,6 +75,16 @@ namespace Trader
 
 
             _presenter.ShowInfo("Starting arbitrage...");
+
+            var arbitrage = _context.MakeArbitrageObj(orderCandidate);
+
+            arbitrage.BeforeBuyExchangeAvailableBaseAmount = beforeBuyExchangeAvailableBaseAmount;
+            arbitrage.BeforeBuyExchangeAvailableQuoteAmount = beforeBuyExchangeAvailableQuoteAmount;
+
+            arbitrage.BeforeSellExchangeAvailableBaseAmount = beforeSellExchangeAvailableBaseAmount;
+            arbitrage.BeforeSellExchangeAvailableQuoteAmount = beforeSellExchangeAvailableQuoteAmount;
+
+            _context.Arbitrages.Add(arbitrage);
 
             var buyResult = await buyLogic.BuyLimitOrderAsync(orderCandidate);
             _presenter.ShowBuyResult(buyResult);

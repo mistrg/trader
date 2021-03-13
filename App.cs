@@ -23,7 +23,6 @@ namespace Trader
         private readonly AaxLogic _aaxLogic;
         private readonly Presenter _presenter;
 
-        private static int _dbRetries = 0;
 
         public static string RunId;
         public static int Version;
@@ -41,11 +40,10 @@ namespace Trader
 
         public async Task RunAsync()
         {
-
             Console.ResetColor();
 
             RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
-            Version = 19;
+            Version = 20;
 
             _presenter.ShowInfo($"Trader version {Version} starting runId: {RunId}!");
 
@@ -55,12 +53,12 @@ namespace Trader
 
 
 
-//   var buyAvailable = await _coinmateLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
-//     var sellAvailable = await _binanceLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
+            //   var buyAvailable = await _coinmateLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
+            //     var sellAvailable = await _binanceLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
 
-//     Console.WriteLine($"CM {buyAvailable.Item1} BTC         {buyAvailable.Item2} EURO");
-//     Console.WriteLine($"BI {sellAvailable.Item1} BTC         {sellAvailable.Item2} EURO");
-//     return;
+            //     Console.WriteLine($"CM {buyAvailable.Item1} BTC         {buyAvailable.Item2} EURO");
+            //     Console.WriteLine($"BI {sellAvailable.Item1} BTC         {sellAvailable.Item2} EURO");
+            //     return;
             // await _coinmateLogic.GetOrderHistoryAsync("BTC_EUR");
 
             //await _binanceLogic.GetAllOrders("BTCEUR");
@@ -95,8 +93,8 @@ namespace Trader
 
                         if (minimalAmount <= 0.0002)
                             continue; //Too small for coinmate
-                        
-                        
+
+
                         if (sellEntry.bidPrice.Value * minimalAmount <= 11) // Price more then 11 Euros
                             continue;
                         if (buyEntry.askPrice.Value * minimalAmount <= 11) // Price more then 11 Euros
@@ -129,27 +127,6 @@ namespace Trader
 
                     }
                 }
-
-
-
-            }
-
-
-        }
-
-
-        private IExchangeLogic ResolveExchangeLogic(string exchange)
-        {
-            switch (exchange)
-            {
-                case nameof(Aax):
-                    return _aaxLogic;
-                case nameof(Coinmate):
-                    return _coinmateLogic;
-                case nameof(Binance):
-                    return _binanceLogic;
-                default:
-                    throw new Exception("Invalid exchnage");
             }
         }
 
@@ -177,38 +154,27 @@ namespace Trader
             };
 
             _presenter.PrintOrderCandidate(oc);
-
+            var isDuplicate = await _context.CreateOrSkipOrderCandidateAsync(oc);
 
             var processOrder = Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate;
-            if (processOrder)
-            {
+            if (processOrder && !isDuplicate)
                 await _processor.ProcessOrderAsync(oc);
 
-            }
 
-            try
+        }
+        private IExchangeLogic ResolveExchangeLogic(string exchange)
+        {
+            switch (exchange)
             {
-                MongoDatabase.Instance.CreateOrSkipOrderCandidate(oc, processOrder);
-                App._dbRetries = 0;
-            }
-            catch (System.Exception)
-            {
-                Random r = new Random();
-                int rInt = r.Next(1000, 60 * 1000);
-                Thread.Sleep(rInt);
-
-                App._dbRetries++;
-
-                if (App._dbRetries > 20)
-                {
-                    _presenter.ShowError($"Retrying didnt help");
-
-                    throw;
-                }
-                _presenter.ShowInfo($"Retrying Database write {App._dbRetries}/20");
-                MongoDatabase.Reset();
+                case nameof(Aax):
+                    return _aaxLogic;
+                case nameof(Coinmate):
+                    return _coinmateLogic;
+                case nameof(Binance):
+                    return _binanceLogic;
+                default:
+                    throw new Exception("Invalid exchnage");
             }
         }
-
     }
 }

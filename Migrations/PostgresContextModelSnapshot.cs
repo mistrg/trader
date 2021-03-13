@@ -173,6 +173,72 @@ namespace Trader.Migrations
 
                     b.ToTable("Arbitrages");
                 });
+
+            modelBuilder.Entity("Trader.PostgresDb.OrderCandidate", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasAnnotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn);
+
+                    b.Property<double>("Amount")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("BotRunId")
+                        .HasColumnType("text");
+
+                    b.Property<int>("BotVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("BuyExchange")
+                        .HasColumnType("text");
+
+                    b.Property<double>("EstBuyFee")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("EstProfitGross")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("EstProfitNet")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("EstProfitNetRate")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("EstSellFee")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Pair")
+                        .HasColumnType("text");
+
+                    b.Property<string>("SellExchange")
+                        .HasColumnType("text");
+
+                    b.Property<double>("TotalAskPrice")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("TotalBidPrice")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("UnitAskPrice")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("UnitBidPrice")
+                        .HasColumnType("double precision");
+
+                    b.Property<DateTime>("WhenBuySpoted")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime>("WhenCreated")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime>("WhenSellSpoted")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("OrderCandidates");
+                });
 #pragma warning restore 612, 618
         }
     }
