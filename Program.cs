@@ -34,6 +34,8 @@ namespace Trader
 
             services.AddSingleton<Processor>();
             services.AddSingleton<Presenter>();
+            services.AddSingleton<Observer>();
+            services.AddSingleton<Estimator>();
             services.AddSingleton<Coinmate.CoinmateLogic>();
             services.AddSingleton<Binance.BinanceLogic>();
             services.AddSingleton<Aax.AaxLogic>();
@@ -42,6 +44,9 @@ namespace Trader
             services.AddEntityFrameworkNpgsql().AddDbContext<PostgresContext>(opt =>
            opt.UseNpgsql(Config.PostgresConnectionString));
 
+
+            services.AddEntityFrameworkNpgsql().AddDbContext<ObserverContext>(opt =>
+           opt.UseNpgsql(Config.PostgresConnectionString));
             // required to run the application
             services.AddTransient<App>();
 
