@@ -47,9 +47,9 @@ namespace Exchanges
                             var res = await JsonSerializer.DeserializeAsync<Root>(stream);
 
                             foreach (var item in res.data.asks)
-                                result.Add(new DBItem() { Exch = nameof(Cryptology), Pair = upair, amount = double.Parse(item[1]), askPrice = double.Parse(item[0]) });
+                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Cryptology), Pair = upair, amount = double.Parse(item[1]), askPrice = double.Parse(item[0]) });
                             foreach (var item in res.data.bids)
-                                result.Add(new DBItem() { Exch = nameof(Cryptology), Pair = upair, amount = double.Parse(item[1]), bidPrice = double.Parse(item[0]) });
+                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Cryptology), Pair = upair, amount = double.Parse(item[1]), bidPrice = double.Parse(item[0]) });
                         }
 
                     }

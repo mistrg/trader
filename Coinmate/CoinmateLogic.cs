@@ -132,8 +132,10 @@ namespace Trader.Coinmate
             _presenter.ShowInfo(message);
         }
 
-        public async Task<List<DBItem>> GetOrderBookAsync(string pair)
+        public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            var pair = "BTC_EUR";
+
             var result = new List<DBItem>();
             var upair = pair.Replace("_", "");
             try
@@ -147,12 +149,12 @@ namespace Trader.Coinmate
 
                 foreach (var x in res.data.asks)
                 {
-                    result.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price });
+                    result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price });
                 }
 
                 foreach (var x in res.data.bids)
                 {
-                    result.Add(new DBItem() { Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
+                    result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
                 }
             }
             catch

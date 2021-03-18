@@ -14,8 +14,9 @@ namespace Trader.Aax
         static string baseUri = "https://api.aax.com/v2/";
         private static readonly HttpClient httpClient = new HttpClient();
 
-        public async Task<List<DBItem>> GetOrderBookAsync(string pair)
+        public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            string pair = "BTCEUR";
             var result = new List<DBItem>();
             try
             {
@@ -29,7 +30,7 @@ namespace Trader.Aax
                 {
                     var amount = double.Parse(x[1]);
                     var price = double.Parse(x[0]);
-                    result.Add(new DBItem() { Exch = nameof(Aax), Pair = pair, amount = amount, askPrice = price });
+                    result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Aax), Pair = pair, amount = amount, askPrice = price });
                 }
 
 
@@ -38,7 +39,7 @@ namespace Trader.Aax
                     var amount = double.Parse(x[1]);
                     var price = double.Parse(x[0]);
 
-                    result.Add(new DBItem() { Exch = nameof(Aax), Pair = pair, amount = amount, bidPrice = price });
+                    result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Aax), Pair = pair, amount = amount, bidPrice = price });
 
                 }
             }

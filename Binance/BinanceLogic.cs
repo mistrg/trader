@@ -513,8 +513,9 @@ namespace Trader.Binance
 
 
 
-        public async Task<List<DBItem>> GetOrderBookAsync(string pair)
+        public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            var pair = "BTCEUR";
             var result = new List<DBItem>();
 
 
@@ -530,7 +531,7 @@ namespace Trader.Binance
                 {
                     var amount = double.Parse(x[1]);
                     var price = double.Parse(x[0]);
-                    result.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price });
+                    result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price });
                 }
 
 
@@ -539,7 +540,7 @@ namespace Trader.Binance
                     var amount = double.Parse(x[1]);
                     var price = double.Parse(x[0]);
 
-                    result.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price });
+                    result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price });
 
                 }
             }
@@ -570,7 +571,7 @@ namespace Trader.Binance
         //                         var price = double.Parse(x[0]);
         //                         var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.askPrice == price);
         //                         if (dbEntry == null)
-        //                             InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price });
+        //                             InMemDatabase.Instance.Items.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Binance), Pair = pair, amount = amount, askPrice = price });
         //                     }
 
 
@@ -581,7 +582,7 @@ namespace Trader.Binance
 
         //                         var dbEntry = InMemDatabase.Instance.Items.SingleOrDefault(p => p.Exch == nameof(Binance) && p.Pair == pair && p.amount == amount && p.bidPrice == price);
         //                         if (dbEntry == null)
-        //                             InMemDatabase.Instance.Items.Add(new DBItem() { Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price });
+        //                             InMemDatabase.Instance.Items.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Binance), Pair = pair, amount = amount, bidPrice = price });
         //                     }
 
         //                     foreach (var w in InMemDatabase.Instance.Items.Where(p => p.Exch == nameof(Binance) && p.Pair == pair))

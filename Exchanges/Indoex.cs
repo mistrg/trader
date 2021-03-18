@@ -12,8 +12,8 @@ namespace Exchanges
     public class Indoex : IExchangeLogic
     {
         const string pair = "BTC_EUR";
-        // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse); 
-        // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse); 
+        
+        
         public class Ask
         {
             public string price { get; set; }
@@ -56,9 +56,9 @@ namespace Exchanges
                             var res = await JsonSerializer.DeserializeAsync<Root>(stream);
 
                             foreach (var item in res.asks)
-                                result.Add(new DBItem() { Exch = nameof(Indoex), Pair = upair, amount = double.Parse(item.quantity), askPrice = double.Parse(item.price) });
+                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Indoex), Pair = upair, amount = double.Parse(item.quantity), askPrice = double.Parse(item.price) });
                             foreach (var item in res.bids)
-                                result.Add(new DBItem() { Exch = nameof(Indoex), Pair = upair, amount = double.Parse(item.quantity), bidPrice = double.Parse(item.price) });
+                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Indoex), Pair = upair, amount = double.Parse(item.quantity), bidPrice = double.Parse(item.price) });
                         }
 
                     }

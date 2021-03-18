@@ -12,51 +12,10 @@ namespace Trader
     public class Estimator
     {
 
-        private readonly Cryptology _cryptology;
-        private readonly CoinmateLogic _coinmateLogic;
-        private readonly BinanceLogic _binanceLogic;
-        private readonly AaxLogic _aaxLogic;
-        private readonly Bitpanda _bitpanda;
-        private readonly Folgory _folgory;
-        private readonly Indoex _indoex;
-        public Estimator(Processor processor, Folgory folgory, Indoex indoex, Cryptology cryptology, Bitpanda bitpanda, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter, AaxLogic aaxLogic)
-        {
-            _cryptology = cryptology;
-            _aaxLogic = aaxLogic;
-            _coinmateLogic = coinmateLogic;
-            _binanceLogic = binanceLogic;
-            _bitpanda = bitpanda;
-            _folgory = folgory;
-            _indoex = indoex;
-        }
-        private IExchangeLogic ResolveExchangeLogic(string exchange)
-        {
-            switch (exchange)
-            {
-                case nameof(Aax):
-                    return _aaxLogic;
-                case nameof(Coinmate):
-                    return _coinmateLogic;
-                case nameof(Binance):
-                    return _binanceLogic;
-                case nameof(Bitpanda):
-                    return _bitpanda;
-                case nameof(Cryptology):
-                    return _cryptology;
-                case nameof(Folgory):
-                    return _folgory;
-                case nameof(Indoex):
-                    return _indoex;
-                default:
-                    throw new Exception("Invalid exchnage");
-            }
-        }
-
         public OrderCandidate Run(IEnumerable<DBItem> db)
         {
             foreach (var buyEntry in db.Where(p => !p.InPosition))
             {
-                var buyLogic = ResolveExchangeLogic(buyEntry.Exch);
 
                 var sellEntrys = db.Where(sellEntry => sellEntry.Exch != buyEntry.Exch && sellEntry.Pair == buyEntry.Pair && (buyEntry.askPrice < sellEntry.bidPrice) && !sellEntry.InPosition);
                 foreach (var sellEntry in sellEntrys)
@@ -81,11 +40,11 @@ namespace Trader
                     var estProfitGross = Math.Round(sellEntry.bidPrice.Value * minimalAmount - buyEntry.askPrice.Value * minimalAmount, 2);
 
 
-                    var sellLogic = ResolveExchangeLogic(sellEntry.Exch);
 
-                    var estBuyFee = Math.Round(buyEntry.askPrice.Value * minimalAmount * buyLogic.GetTradingTakerFeeRate(), 2);
 
-                    var estSellFee = Math.Round(sellEntry.bidPrice.Value * minimalAmount * sellLogic.GetTradingTakerFeeRate(), 2);
+                    var estBuyFee = Math.Round(buyEntry.askPrice.Value * minimalAmount * buyEntry.TakerFeeRate, 2);
+
+                    var estSellFee = Math.Round(sellEntry.bidPrice.Value * minimalAmount * sellEntry.TakerFeeRate, 2);
 
 
                     var estProfitNet = Math.Round(estProfitGross - estBuyFee - estSellFee, 2);

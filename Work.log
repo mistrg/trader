@@ -33,12 +33,8 @@ Work Log
 
 Check why wallet and real profit does not match
 
-
-
-TODO
-x TECH Why some trades from 11.2. ended in open position => bot crash + minimum amount
-x TECH Why order candidates  from 11.2. were too positive  => wrong timing
-
+IDEAS
+- exchanges without trading apis => bots like zebpay
 
 
 git ls-files | where {$_.EndsWith(".cs") }| %{ Get-Content -Path $_ } | measure

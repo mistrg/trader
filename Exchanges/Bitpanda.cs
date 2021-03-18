@@ -12,7 +12,7 @@ namespace Exchanges
     public class Bitpanda : IExchangeLogic
     {
         const string pair = "BTC_EUR";
-        // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse); 
+        
         public class Bid
         {
             public string price { get; set; }
@@ -57,9 +57,9 @@ namespace Exchanges
                             var res = await JsonSerializer.DeserializeAsync<Root>(stream);
 
                             foreach (var item in res.asks)
-                                result.Add(new DBItem() { Exch = nameof(Bitpanda), Pair = upair, amount = double.Parse(item.amount), askPrice = double.Parse(item.price) });
+                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Bitpanda), Pair = upair, amount = double.Parse(item.amount), askPrice = double.Parse(item.price) });
                             foreach (var item in res.bids)
-                                result.Add(new DBItem() { Exch = nameof(Bitpanda), Pair = upair, amount = double.Parse(item.amount), bidPrice = double.Parse(item.price) });
+                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Bitpanda), Pair = upair, amount = double.Parse(item.amount), bidPrice = double.Parse(item.price) });
                         }
 
                     }

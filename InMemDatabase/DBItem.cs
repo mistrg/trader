@@ -2,8 +2,8 @@ using System;
 
 namespace Trader
 {
-    
- public class DBItem
+
+    public class DBItem
     {
 
         public DBItem()
@@ -12,18 +12,9 @@ namespace Trader
         }
         public string Pair { get; set; }
         public DateTime StartDate { get; set; }
-        public DateTime? EndDate { get; set; }
 
-        public TimeSpan Duration
-        {
-            get
-            {
-                if (EndDate != null)
-                    return EndDate.Value - StartDate;
-                return DateTime.Now - StartDate;
-            }
-        }
-
+        public double TakerFeeRate { get; set; }
+        
         public double? askPrice { get; set; }
         public double? bidPrice { get; set; }
         public double amount { get; set; }

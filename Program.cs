@@ -1,12 +1,11 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
-using Exchanges;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Trader.Email;
-using Trader.Infrastructure;
 using Trader.PostgresDb;
 
 namespace Trader
@@ -37,13 +36,9 @@ namespace Trader
             services.AddSingleton<Presenter>();
             services.AddSingleton<Observer>();
             services.AddSingleton<Estimator>();
-            services.AddSingleton<Coinmate.CoinmateLogic>();
-            services.AddSingleton<Binance.BinanceLogic>();
-            services.AddSingleton<Aax.AaxLogic>();
-            services.AddSingleton<Bitpanda>();
-            services.AddSingleton<Cryptology>();
-            services.AddSingleton<Folgory>();
-            services.AddSingleton<Indoex>();
+
+
+            services.RegisterAllTypes<IExchangeLogic>(new[] { typeof(Program).Assembly });
 
 
             services.AddEntityFrameworkNpgsql().AddDbContext<PostgresContext>(opt =>
@@ -66,6 +61,6 @@ namespace Trader
 
             return builder.Build();
         }
-
     }
+        
 }

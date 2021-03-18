@@ -10,16 +10,12 @@ namespace Trader
     {
         private readonly PostgresContext _context;
         private readonly Presenter _presenter;
-        private readonly CoinmateLogic _coinmateLogic;
-        private readonly BinanceLogic _binanceLogic;
 
         private bool LowCreditWarningSent = false;
-        public Processor(PostgresContext context, Presenter presenter, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic)
+        public Processor(PostgresContext context, Presenter presenter)
         {
             _context = context;
             _presenter = presenter;
-            _coinmateLogic = coinmateLogic;
-            _binanceLogic = binanceLogic;
         }
 
         public async Task ProcessOrderAsync(OrderCandidate orderCandidate)
@@ -162,9 +158,9 @@ namespace Trader
             switch (exchange)
             {
                 case nameof(Coinmate):
-                    return _coinmateLogic;
+                    return null;
                 case nameof(Binance):
-                    return _binanceLogic;
+                    return null;
                 default:
                     throw new Exception("Invalid exchnage");
             }

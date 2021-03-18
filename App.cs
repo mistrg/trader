@@ -17,16 +17,14 @@ namespace Trader
         private readonly PostgresContext _context;
         private readonly CoinmateLogic _coinmateLogic;
         private readonly BinanceLogic _binanceLogic;
-        private readonly AaxLogic _aaxLogic;
         private readonly Presenter _presenter;
         private readonly Observer _observer;
 
         private readonly Estimator _estimator;
 
 
-        public App(IConfiguration config, Estimator estimator, Observer observer, Processor processor, PostgresContext context, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter, AaxLogic aaxLogic)
+        public App(IConfiguration config, Estimator estimator, Observer observer, Processor processor, PostgresContext context, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter)
         {
-            _aaxLogic = aaxLogic;
             _config = config;
             _processor = processor;
             _context = context;
@@ -71,11 +69,12 @@ namespace Trader
             dbt.Start();
 
 
+            Thread.Sleep(6000000);
             while (true)
             {
 
-                var bob = await _binanceLogic.GetOrderBookAsync("BTCEUR");
-                var cob = await _coinmateLogic.GetOrderBookAsync("BTC_EUR");
+                var bob = await _binanceLogic.GetOrderBookAsync();
+                var cob = await _coinmateLogic.GetOrderBookAsync();
 
                 var db = bob.Union(cob);
 
