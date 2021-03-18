@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
@@ -7,7 +8,7 @@ using Trader.PostgresDb;
 
 namespace Trader.Aax
 {
-    public class AaxLogic : IExchangeLogic
+    public class AaxLogic 
     {
 
 
@@ -43,15 +44,16 @@ namespace Trader.Aax
 
                 }
             }
-            catch
+            catch (System.Exception ex)
             {
+                //Debug.Write(this); 
             }
             return result;
         }
 
         public double GetTradingTakerFeeRate()
         {
-             return 0.001;
+            return 0.001;
         }
 
         public Task<System.Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
@@ -65,6 +67,11 @@ namespace Trader.Aax
         }
 
         public Task<System.Tuple<double?, double?>> GetAvailableAmountAsync(string currencyPair)
+        {
+            throw new System.Exception();
+        }
+
+        public Task PrintAccountInformationAsync()
         {
             throw new System.Exception();
         }

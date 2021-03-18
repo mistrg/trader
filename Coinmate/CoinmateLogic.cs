@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -157,8 +158,9 @@ namespace Trader.Coinmate
                     result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
                 }
             }
-            catch
+            catch (System.Exception ex)
             {
+                //Debug.Write(this); 
             }
             return result;
         }
@@ -470,7 +472,7 @@ namespace Trader.Coinmate
 
                 if (result?.Status == "CANCELLED")
                 {
-                    if (result?.RemainingAmount == result?.OriginalAmount )
+                    if (result?.RemainingAmount == result?.OriginalAmount)
                     {
                         var comment = "Order was already cancelled successfully.Process cancel...";
                         _presenter.ShowInfo(comment);

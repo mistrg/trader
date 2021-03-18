@@ -3,10 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
-using Exchanges;
-using Trader.Aax;
-using Trader.Binance;
-using Trader.Coinmate;
 using Trader.PostgresDb;
 
 
@@ -26,12 +22,12 @@ namespace Trader
         private readonly IEnumerable<IExchangeLogic> _exchangeLogics;
 
         private readonly Presenter _presenter;
-        public Observer(ObserverContext context,IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter, Estimator estimator)
+        public Observer(ObserverContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter, Estimator estimator)
         {
             _context = context;
             _estimator = estimator;
             _presenter = presenter;
-            _exchangeLogics= exchangeLogics;
+            _exchangeLogics = exchangeLogics;
         }
 
 
@@ -42,20 +38,23 @@ namespace Trader
                 Stopwatch stopWatch = new Stopwatch();
                 stopWatch.Start();
 
-                //TODO Paralelism with timelimit 
-                // var ro = await _aaxLogic.GetOrderBookAsync("BTCEUR");
-                // var bi = await _binanceLogic.GetOrderBookAsync("BTCEUR");
-                // var cm = await _coinmateLogic.GetOrderBookAsync("BTC_EUR");
-                // var bp = await _bitpanda.GetOrderBookAsync();
-                // var cl = await _cryptology.GetOrderBookAsync();
-                // var io = await _indoex.GetOrderBookAsync();
-                // var fo = await _folgory.GetOrderBookAsync();
-                List<DBItem> res = new List<DBItem>();
-                foreach (var logic in _exchangeLogics)
-                {
-                    res.AddRange(await logic.GetOrderBookAsync());
-                }
-                var oc = _estimator.Run(res);
+               
+                // List<DBItem> res = new List<DBItem>();
+                // foreach (var logic in _exchangeLogics)
+                // {
+                //     res.AddRange(await logic.GetOrderBookAsync());
+                // }
+                // Console.WriteLine("Single: " + res.Count());
+
+
+                var tasks = _exchangeLogics.Select(ex => ex.GetOrderBookAsync());
+                var users = await Task.WhenAll(tasks);
+
+                var res2 = users.SelectMany(p=>p);
+        
+
+                var oc = _estimator.Run(res2);
+
 
                 if (oc != null)
                 {

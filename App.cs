@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Trader.Aax;
 using Trader.Binance;
 using Trader.Coinmate;
 using Trader.PostgresDb;
@@ -15,21 +15,19 @@ namespace Trader
         private readonly IConfiguration _config;
         private readonly Processor _processor;
         private readonly PostgresContext _context;
-        private readonly CoinmateLogic _coinmateLogic;
-        private readonly BinanceLogic _binanceLogic;
         private readonly Presenter _presenter;
         private readonly Observer _observer;
 
         private readonly Estimator _estimator;
 
+        private readonly IEnumerable<IExchangeLogic> _exchangeLogics;
 
-        public App(IConfiguration config, Estimator estimator, Observer observer, Processor processor, PostgresContext context, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter)
+        public App(IConfiguration config, Estimator estimator, Observer observer, Processor processor, PostgresContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
         {
             _config = config;
             _processor = processor;
             _context = context;
-            _coinmateLogic = coinmateLogic;
-            _binanceLogic = binanceLogic;
+            _exchangeLogics = exchangeLogics;
             _presenter = presenter;
             _observer = observer;
             _estimator = estimator;
@@ -42,10 +40,12 @@ namespace Trader
             Config.RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
 
             _presenter.ShowInfo($"Trader version {Config.Version} starting runId: {Config.RunId}!");
+            
+            var bl = _exchangeLogics.Single(p => p.GetType() == typeof(BinanceLogic));
+            var cl = _exchangeLogics.Single(p => p.GetType() == typeof(CoinmateLogic));
 
-
-            await _coinmateLogic.PrintAccountInformationAsync();
-            await _binanceLogic.PrintAccountInformationAsync();
+            await cl.PrintAccountInformationAsync();
+            await bl.PrintAccountInformationAsync();
 
 
 
@@ -73,8 +73,8 @@ namespace Trader
             while (true)
             {
 
-                var bob = await _binanceLogic.GetOrderBookAsync();
-                var cob = await _coinmateLogic.GetOrderBookAsync();
+                var bob = await bl.GetOrderBookAsync();
+                var cob = await cl.GetOrderBookAsync();
 
                 var db = bob.Union(cob);
 
@@ -84,7 +84,7 @@ namespace Trader
                 {
                     _presenter.PrintOrderCandidate(oc);
 
-                    
+
                     var processOrder = Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate;
                     if (processOrder)
                         await _processor.ProcessOrderAsync(oc);

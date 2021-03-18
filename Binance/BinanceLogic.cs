@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text.Json;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
+using System.Diagnostics;
 
 namespace Trader.Binance
 {
@@ -178,7 +179,7 @@ namespace Trader.Binance
 
 
 
-        public async Task<Tuple<double?,double?>> GetAvailableAmountAsync(string currencyPair)
+        public async Task<Tuple<double?, double?>> GetAvailableAmountAsync(string currencyPair)
         {
             var biAccount = await GetAccountInformationAsync();
             if (biAccount == null)
@@ -186,10 +187,10 @@ namespace Trader.Binance
                 _presenter.ShowError("Binance account info not accessible");
                 return new Tuple<double?, double?>(null, null);
             }
-            var btc = biAccount.balances.SingleOrDefault(p => p.asset == currencyPair.Substring(0,3))?.freeNum;
-            var euro = biAccount.balances.SingleOrDefault(p => p.asset == currencyPair.Substring(3,3))?.freeNum;
-            
-             return new Tuple<double?, double?>(btc, euro);;
+            var btc = biAccount.balances.SingleOrDefault(p => p.asset == currencyPair.Substring(0, 3))?.freeNum;
+            var euro = biAccount.balances.SingleOrDefault(p => p.asset == currencyPair.Substring(3, 3))?.freeNum;
+
+            return new Tuple<double?, double?>(btc, euro); ;
         }
 
 
@@ -319,7 +320,7 @@ namespace Trader.Binance
 
 
 
-        private async Task<OrderResponse> SellOcoAsync(string currencyPair, double amount,double price, double stopPrice,  long clientOrderId)
+        private async Task<OrderResponse> SellOcoAsync(string currencyPair, double amount, double price, double stopPrice, long clientOrderId)
         {
 
             var timestamp = DateTimeOffset.Now.ToUnixTimeMilliseconds();
@@ -437,7 +438,7 @@ namespace Trader.Binance
             }
 
 
-            orderCandidate.Amount = (result.OriginalAmount ??0 )  - result.RemainingAmount.Value - result.CummulativeFee;
+            orderCandidate.Amount = (result.OriginalAmount ?? 0) - result.RemainingAmount.Value - result.CummulativeFee;
 
 
             var boughtSomething = Math.Round(orderCandidate.Amount, 6) > 0;
@@ -544,9 +545,9 @@ namespace Trader.Binance
 
                 }
             }
-            catch
+            catch (System.Exception ex)
             {
-                
+                //Debug.Write(this); 
             }
             return result;
 

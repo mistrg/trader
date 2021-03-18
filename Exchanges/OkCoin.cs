@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -53,8 +54,9 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
+                //Debug.Write(this); 
             }
             return result;
 
@@ -79,6 +81,11 @@ namespace Exchanges
         public Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate)
         {
             throw new Exception();
+        }
+
+        public Task PrintAccountInformationAsync()
+        {
+            throw new System.Exception();
         }
     }
 }

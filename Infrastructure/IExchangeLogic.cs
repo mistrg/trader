@@ -14,4 +14,6 @@ public interface IExchangeLogic
 
      Task<List<DBItem>> GetOrderBookAsync();
 
+     Task PrintAccountInformationAsync();
+
 }
