@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Trader.Aax;
 using Trader.Binance;
@@ -68,6 +69,8 @@ namespace Trader
                                       await _observer.RunAsync();
                                   });
             dbt.Start();
+
+
             while (true)
             {
 

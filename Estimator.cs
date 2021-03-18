@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exchanges;
 using Trader.Aax;
 using Trader.Binance;
 using Trader.Coinmate;
@@ -11,14 +12,22 @@ namespace Trader
     public class Estimator
     {
 
+        private readonly Cryptology _cryptology;
         private readonly CoinmateLogic _coinmateLogic;
         private readonly BinanceLogic _binanceLogic;
         private readonly AaxLogic _aaxLogic;
-        public Estimator(Processor processor,  CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter, AaxLogic aaxLogic)
+        private readonly Bitpanda _bitpanda;
+        private readonly Folgory _folgory;
+        private readonly Indoex _indoex;
+        public Estimator(Processor processor, Folgory folgory, Indoex indoex, Cryptology cryptology, Bitpanda bitpanda, CoinmateLogic coinmateLogic, BinanceLogic binanceLogic, Presenter presenter, AaxLogic aaxLogic)
         {
+            _cryptology = cryptology;
             _aaxLogic = aaxLogic;
             _coinmateLogic = coinmateLogic;
             _binanceLogic = binanceLogic;
+            _bitpanda = bitpanda;
+            _folgory = folgory;
+            _indoex = indoex;
         }
         private IExchangeLogic ResolveExchangeLogic(string exchange)
         {
@@ -30,6 +39,14 @@ namespace Trader
                     return _coinmateLogic;
                 case nameof(Binance):
                     return _binanceLogic;
+                case nameof(Bitpanda):
+                    return _bitpanda;
+                case nameof(Cryptology):
+                    return _cryptology;
+                case nameof(Folgory):
+                    return _folgory;
+                case nameof(Indoex):
+                    return _indoex;
                 default:
                     throw new Exception("Invalid exchnage");
             }

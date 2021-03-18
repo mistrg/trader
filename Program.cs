@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Threading.Tasks;
+using Exchanges;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -39,6 +40,10 @@ namespace Trader
             services.AddSingleton<Coinmate.CoinmateLogic>();
             services.AddSingleton<Binance.BinanceLogic>();
             services.AddSingleton<Aax.AaxLogic>();
+            services.AddSingleton<Bitpanda>();
+            services.AddSingleton<Cryptology>();
+            services.AddSingleton<Folgory>();
+            services.AddSingleton<Indoex>();
 
 
             services.AddEntityFrameworkNpgsql().AddDbContext<PostgresContext>(opt =>

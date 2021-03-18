@@ -10,7 +10,7 @@ public static class Config
     public static string BinanceSecretKey { get { return "wkLjUrU6Jfa9XbZ8kxysr7xajMq67fySuxysIjxYnhpoYi46LtUIrTkfnZC052Y1"; } }
 
 
-    public static int Version { get { return 21; } }
+    public static int Version { get { return 22; } }
     public static string RunId { get; set; }
 
     public static string PostgresConnectionString { get { return "Server = drbalek.cz; Port = 5432; Database = Drbor; User Id = drborbot; Password = G3ed9lPii3; "; } }
