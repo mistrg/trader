@@ -8,12 +8,16 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Bitpanda : IExchangeLogic
+    public class Bitpanda : BaseExchange, IExchangeLogic
     {
+        public Bitpanda(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "BTC_EUR";
-        
+
         public class Bid
         {
             public string price { get; set; }
@@ -40,16 +44,17 @@ namespace Exchanges
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = pair.Replace("_", "");
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
 
-                    var response = await httpClient.GetAsync("https://api.exchange.bitpanda.com/public/v1/order-book/" + pair+"?depth=100");
+
+                    var response = await httpClient.GetAsync("https://api.exchange.bitpanda.com/public/v1/order-book/" + pair + "?depth=100");
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -66,10 +71,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,6 +13,10 @@ namespace Trader.PostgresDb
 
 
         public DbSet<OrderCandidate> OrderCandidates { get; set; }
+
+        public DbSet<BotRun> BotRuns { get; set; }
+
+        public DbSet<ExchangeRuntimeInfo> ExchangeRuntimeInfo {get;set;}
 
         public ObserverContext()
         {
@@ -51,6 +56,18 @@ namespace Trader.PostgresDb
             return false;
 
 
+        }
+
+        internal void NewBotrun()
+        {
+            Config.RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
+            var br = new BotRun()
+            {
+                Id = Config.RunId,
+                Version = Config.Version
+            };
+            BotRuns.Add(br);
+            SaveChanges();
         }
     }
 

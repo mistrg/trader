@@ -8,50 +8,57 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class B2bx : IExchangeLogic
+    public class B2bx : BaseExchange, IExchangeLogic
     {
+        public B2bx(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "btc_eur";
-     
-    public class Bid
-    {
-        public double amount { get; set; }
-        public double price { get; set; }
-    }
 
-    public class Ask
-    {
-        public double amount { get; set; }
-        public double price { get; set; }
-    }
 
-    public class Root
-    {
-        public string instrument { get; set; }
-        public List<Bid> bids { get; set; }
-        public List<Ask> asks { get; set; }
-        public int version { get; set; }
-        public double askTotalAmount { get; set; }
-        public double bidTotalAmount { get; set; }
-        public bool snapshot { get; set; }
-    }
+
+        public class Bid
+        {
+            public double amount { get; set; }
+            public double price { get; set; }
+        }
+
+        public class Ask
+        {
+            public double amount { get; set; }
+            public double price { get; set; }
+        }
+
+        public class Root
+        {
+            public string instrument { get; set; }
+            public List<Bid> bids { get; set; }
+            public List<Ask> asks { get; set; }
+            public int version { get; set; }
+            public double askTotalAmount { get; set; }
+            public double bidTotalAmount { get; set; }
+            public bool snapshot { get; set; }
+        }
 
 
 
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = pair.Replace("_", "").ToUpper();
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
 
-                    var response = await httpClient.GetAsync("https://api.b2bx.exchange:8443/trading/marketdata/instruments/"+pair+"/depth");
+
+                    var response = await httpClient.GetAsync("https://api.b2bx.exchange:8443/trading/marketdata/instruments/" + pair + "/depth");
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -68,10 +75,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

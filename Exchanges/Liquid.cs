@@ -8,30 +8,35 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Liquid : IExchangeLogic
+    public class Liquid : BaseExchange, IExchangeLogic
     {
+        public Liquid(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "BTCEUR";
-      
-    public class Root
-    {
-        public List<List<string>> buy_price_levels { get; set; }
-        public List<List<string>> sell_price_levels { get; set; }
-        public string timestamp { get; set; }
-    }
+
+        public class Root
+        {
+            public List<List<string>> buy_price_levels { get; set; }
+            public List<List<string>> sell_price_levels { get; set; }
+            public string timestamp { get; set; }
+        }
 
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = pair.Replace("-", "");
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
+
 
                     var response = await httpClient.GetAsync("https://api.liquid.com/products/3/price_levels");
 
@@ -50,10 +55,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

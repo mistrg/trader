@@ -27,7 +27,8 @@ Work Log
 12.3.2021 Warning on low credit, fixed for cancelled Coinmate orders
 13.3.2021 Looking for database storage, installing postgres on the server, saving everything to single database, Why so many arbitrages created,  Why processed even when not enough credit  (Coinmate account info not accessible)
 17.3.2021 Integrated other exchanges, Deployed version 22
-
+18.3.2021 Integrating many different exchanges
+19.3.2021 Adding telemetry and transparency measures
 
 
 

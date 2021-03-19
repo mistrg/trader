@@ -8,11 +8,15 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Bitstamp : IExchangeLogic
+    public class Bitstamp : BaseExchange, IExchangeLogic
     {
-        const string pair = "BTCEUR";
+        public Bitstamp(ObserverContext context)
+                : base(context)
+        {
+        }
+        const string pair = "btceur";
         public class Root
         {
             public string timestamp { get; set; }
@@ -29,16 +33,17 @@ namespace Exchanges
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
-            var upair = pair.Replace("-", "");
+            OrderBookTotalCount++;
+            var upair = pair.Replace("-", "").ToUpper();
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
 
-                    var response = await httpClient.GetAsync($"https://www.bitstamp.net/api/order_book/{pair}");
+
+                    var response = await httpClient.GetAsync($"https://www.bitstamp.net/api/v2/order_book/{pair}/");
 
                     if (response.IsSuccessStatusCode)
                     {
@@ -55,10 +60,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

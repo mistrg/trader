@@ -8,31 +8,36 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Coinfloor : IExchangeLogic
+    public class Coinfloor : BaseExchange, IExchangeLogic
     {
+        public Coinfloor(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "XBT/EUR";
-      
-    public class Root
-    {
-        public List<List<string>> bids { get; set; }
-        public List<List<string>> asks { get; set; }
-    }
+
+        public class Root
+        {
+            public List<List<string>> bids { get; set; }
+            public List<List<string>> asks { get; set; }
+        }
 
 
 
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = "BTCEUR";
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
+
 
                     var response = await httpClient.GetAsync($"https://webapi.coinfloor.co.uk/v2/bist/{pair}/order_book/");
 
@@ -51,10 +56,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

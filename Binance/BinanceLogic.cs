@@ -10,16 +10,19 @@ using System.Text.Json;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 using System.Diagnostics;
+using Trader.Exchanges;
 
 namespace Trader.Binance
 {
-    public class BinanceLogic : IExchangeLogic
+    public class BinanceLogic : BaseExchange, IExchangeLogic
     {
+
         public List<string> Pairs { get; }
 
         private readonly Presenter _presenter;
 
-        public BinanceLogic(Presenter presenter)
+        public BinanceLogic(Presenter presenter, ObserverContext context)
+                : base(context)
         {
             _presenter = presenter;
             Pairs = new List<string>() { "BTCEUR" };
@@ -516,6 +519,7 @@ namespace Trader.Binance
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var pair = "BTCEUR";
             var result = new List<DBItem>();
 
@@ -545,10 +549,12 @@ namespace Trader.Binance
 
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

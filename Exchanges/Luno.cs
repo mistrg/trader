@@ -8,12 +8,16 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Luno : IExchangeLogic
+    public class Luno : BaseExchange, IExchangeLogic
     {
+        public Luno(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "XBTEUR";
-        
+
         public class Ask
         {
             public string price { get; set; }
@@ -40,14 +44,15 @@ namespace Exchanges
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = "BTCEUR";
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
+
 
                     var response = await httpClient.GetAsync($"https://api.luno.com/api/1/orderbook_top?pair={pair}");
 
@@ -66,10 +71,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

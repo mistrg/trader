@@ -8,10 +8,14 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Folgory : IExchangeLogic
+    public class Folgory : BaseExchange, IExchangeLogic
     {
+        public Folgory(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "BTC_EUR";
         public class Data
         {
@@ -31,14 +35,15 @@ namespace Exchanges
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = pair.Replace("_", "");
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
+
 
                     var response = await httpClient.GetAsync("https://folgory.com/market/order_book?symbol=" + pair);
 
@@ -57,10 +62,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

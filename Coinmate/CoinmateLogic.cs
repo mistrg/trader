@@ -10,14 +10,16 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Trader.Exchanges;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
 namespace Trader.Coinmate
 {
 
-    public class CoinmateLogic : IExchangeLogic
+    public class CoinmateLogic : BaseExchange, IExchangeLogic
     {
+
         private static readonly HttpClient httpClient = new HttpClient();
 
         private readonly Presenter _presenter;
@@ -28,7 +30,8 @@ namespace Trader.Coinmate
         public List<string> Pairs { get; }
 
 
-        public CoinmateLogic(Presenter presenter)
+        public CoinmateLogic(Presenter presenter, ObserverContext context)
+                : base(context)
         {
             Pairs = new List<string>() { "BTC_EUR" };
             _presenter = presenter;
@@ -135,6 +138,7 @@ namespace Trader.Coinmate
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var pair = "BTC_EUR";
 
             var result = new List<DBItem>();
@@ -158,10 +162,12 @@ namespace Trader.Coinmate
                     result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
         }
         public async Task<Order> GetOrderByOrderIdAsync(long orderId)

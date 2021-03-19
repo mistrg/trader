@@ -8,30 +8,34 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Bitflyer : IExchangeLogic
+    public class Bitflyer : BaseExchange, IExchangeLogic
     {
+        public Bitflyer(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "BTC_EUR";
-      
-    public class Bid
-    {
-        public double price { get; set; }
-        public double size { get; set; }
-    }
 
-    public class Ask
-    {
-        public double price { get; set; }
-        public double size { get; set; }
-    }
+        public class Bid
+        {
+            public double price { get; set; }
+            public double size { get; set; }
+        }
 
-    public class Root
-    {
-        public double mid_price { get; set; }
-        public List<Bid> bids { get; set; }
-        public List<Ask> asks { get; set; }
-    }
+        public class Ask
+        {
+            public double price { get; set; }
+            public double size { get; set; }
+        }
+
+        public class Root
+        {
+            public double mid_price { get; set; }
+            public List<Bid> bids { get; set; }
+            public List<Ask> asks { get; set; }
+        }
 
 
 
@@ -39,14 +43,15 @@ namespace Exchanges
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = pair.Replace("_", "");
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
+
 
                     var response = await httpClient.GetAsync($"https://api.bitflyer.com/v1/getboard?product_code={pair}");
 
@@ -59,16 +64,18 @@ namespace Exchanges
                             foreach (var item in res.asks)
                                 result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Bitflyer), Pair = upair, amount = item.size, askPrice = item.price });
                             foreach (var item in res.bids)
-                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Bitflyer), Pair = upair, amount = item.size, bidPrice =item.price });
+                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Bitflyer), Pair = upair, amount = item.size, bidPrice = item.price });
                         }
 
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

@@ -8,10 +8,14 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Whitebit : IExchangeLogic
+    public class Whitebit : BaseExchange, IExchangeLogic
     {
+        public Whitebit(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "BTC_EUR";
         public class Root
         {
@@ -24,14 +28,15 @@ namespace Exchanges
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = pair.Replace("_", "");
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
+
 
                     var response = await httpClient.GetAsync("https://whitebit.com/api/v1/public/depth/result?market=" + pair);
 
@@ -50,10 +55,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this);); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

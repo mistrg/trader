@@ -33,43 +33,41 @@ namespace Trader
 
         public async Task RunAsync()
         {
+            var lastMinute = DateTime.Now.Minute;
             while (true)
             {
+
                 Stopwatch stopWatch = new Stopwatch();
                 stopWatch.Start();
-
-               
-                // List<DBItem> res = new List<DBItem>();
-                // foreach (var logic in _exchangeLogics)
-                // {
-                //     res.AddRange(await logic.GetOrderBookAsync());
-                // }
-                // Console.WriteLine("Single: " + res.Count());
 
 
                 var tasks = _exchangeLogics.Select(ex => ex.GetOrderBookAsync());
                 var users = await Task.WhenAll(tasks);
 
-                var res2 = users.SelectMany(p=>p);
-        
+                var res2 = users.SelectMany(p => p);
+
 
                 var oc = _estimator.Run(res2);
 
 
                 if (oc != null)
                 {
-                    _presenter.PrintOrderCandidate(oc);
                     await _context.CreateOrSkipOrderCandidateAsync(oc);
-
                 }
 
                 stopWatch.Stop();
                 TimeSpan ts = stopWatch.Elapsed;
 
-
-                Console.WriteLine($"Last cycle {ts.TotalSeconds} seconds");
+                if (lastMinute != DateTime.Now.Minute)
+                {
+                    lastMinute = DateTime.Now.Minute;
+                    //Every minute
+                    foreach (var logic in _exchangeLogics)
+                        await logic.SaveTelemetryAsync();
+                        
+                    await _context.SaveChangesAsync();
+                }
             }
         }
-
     }
 }

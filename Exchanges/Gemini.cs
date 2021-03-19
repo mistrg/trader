@@ -8,31 +8,35 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Gemini : IExchangeLogic
+    public class Gemini : BaseExchange, IExchangeLogic
     {
+        public Gemini(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "BTCEUR";
-     
-    public class Bid
-    {
-        public string price { get; set; }
-        public string amount { get; set; }
-        public string timestamp { get; set; }
-    }
 
-    public class Ask
-    {
-        public string price { get; set; }
-        public string amount { get; set; }
-        public string timestamp { get; set; }
-    }
+        public class Bid
+        {
+            public string price { get; set; }
+            public string amount { get; set; }
+            public string timestamp { get; set; }
+        }
 
-    public class Root
-    {
-        public List<Bid> bids { get; set; }
-        public List<Ask> asks { get; set; }
-    }
+        public class Ask
+        {
+            public string price { get; set; }
+            public string amount { get; set; }
+            public string timestamp { get; set; }
+        }
+
+        public class Root
+        {
+            public List<Bid> bids { get; set; }
+            public List<Ask> asks { get; set; }
+        }
 
 
 
@@ -40,14 +44,15 @@ namespace Exchanges
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = pair.Replace("_", "");
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
+
 
                     var response = await httpClient.GetAsync("https://api.gemini.com/v1/book/" + pair);
 
@@ -66,10 +71,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

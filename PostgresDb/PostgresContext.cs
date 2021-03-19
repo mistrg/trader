@@ -27,6 +27,7 @@ namespace Trader.PostgresDb
         public DbSet<Arbitrage> Arbitrages { get; set; }
 
 
+
         internal Arbitrage MakeArbitrageObj(OrderCandidate orderCandidate)
         {
             var arbitrage = new Arbitrage()

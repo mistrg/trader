@@ -22,10 +22,12 @@ namespace Trader
 
         private readonly IEnumerable<IExchangeLogic> _exchangeLogics;
 
-        public App(IConfiguration config, Estimator estimator, Observer observer, Processor processor, PostgresContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
+        private readonly ObserverContext _ocontext;
+        public App(IConfiguration config, Estimator estimator,ObserverContext ocontext, Observer observer, Processor processor, PostgresContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
         {
             _config = config;
             _processor = processor;
+            _ocontext = ocontext;
             _context = context;
             _exchangeLogics = exchangeLogics;
             _presenter = presenter;
@@ -37,7 +39,8 @@ namespace Trader
         {
             Console.ResetColor();
 
-            Config.RunId = DateTime.Now.ToString("yyyyMMddHHmmss");
+
+            _ocontext.NewBotrun();
 
             _presenter.ShowInfo($"Trader version {Config.Version} starting runId: {Config.RunId}!");
             
@@ -69,7 +72,6 @@ namespace Trader
             dbt.Start();
 
 
-            Thread.Sleep(6000000);
             while (true)
             {
 

@@ -1,10 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exchanges;
-using Trader.Aax;
-using Trader.Binance;
-using Trader.Coinmate;
 using Trader.PostgresDb;
 
 namespace Trader

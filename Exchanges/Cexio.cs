@@ -8,12 +8,17 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Cexio : IExchangeLogic
+    public class Cexio : BaseExchange, IExchangeLogic
     {
+       
+        public Cexio(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "BTC/EUR";
-        
+
         public class Root
         {
             public int timestamp { get; set; }
@@ -32,14 +37,15 @@ namespace Exchanges
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = pair.Replace("/", "");
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
+
 
                     var response = await httpClient.GetAsync("https://cex.io/api/order_book/" + pair);
 
@@ -58,10 +64,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }

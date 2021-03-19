@@ -8,12 +8,16 @@ using Trader;
 using Trader.Infrastructure;
 using Trader.PostgresDb;
 
-namespace Exchanges
+namespace Trader.Exchanges
 {
-    public class Exmo : IExchangeLogic
+    public class Exmo : BaseExchange, IExchangeLogic
     {
+        public Exmo(ObserverContext context)
+                : base(context)
+        {
+        }
         const string pair = "BTC_EUR";
-        
+
         public class BTCEUR
         {
             public string ask_quantity { get; set; }
@@ -34,14 +38,15 @@ namespace Exchanges
 
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
+            OrderBookTotalCount++;
             var upair = pair.Replace("_", "");
 
             var result = new List<DBItem>();
             try
             {
-                using (HttpClient httpClient = new HttpClient())
+                using (HttpClient httpClient = GetHttpClient())
                 {
-                    httpClient.Timeout = TimeSpan.FromMilliseconds(1000);
+
 
                     var response = await httpClient.GetAsync($"https://api.exmo.com/v1.1/order_book?pair={pair}");
 
@@ -60,10 +65,12 @@ namespace Exchanges
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch
             {
-                //Debug.Write(this); 
+                OrderBookFailCount++;
             }
+            if (result.Count > 0)
+                OrderBookSuccessCount++;
             return result;
 
         }
