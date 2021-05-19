@@ -1,8 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using Trader.Binance;
-using Trader.Coinmate;
 using Trader.PostgresDb;
+using System.Linq;
 
 namespace Trader
 {
@@ -12,24 +12,28 @@ namespace Trader
         private readonly Presenter _presenter;
 
         private bool LowCreditWarningSent = false;
-        public Processor(PostgresContext context, Presenter presenter)
+
+        private readonly IEnumerable<IExchangeLogic> _exchangeLogics;
+
+
+        public Processor(PostgresContext context,IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
         {
             _context = context;
             _presenter = presenter;
+            _exchangeLogics = exchangeLogics;
         }
 
         public async Task ProcessOrderAsync(OrderCandidate orderCandidate)
         {
 
 
-            if (!((orderCandidate.BuyExchange == nameof(Trader.Coinmate) && orderCandidate.SellExchange == nameof(Trader.Binance)) ||
-            (orderCandidate.BuyExchange == nameof(Trader.Binance) && orderCandidate.SellExchange == nameof(Trader.Coinmate))))
+            if (!((orderCandidate.BuyExchange == nameof(Trader.BitBay) && orderCandidate.SellExchange == nameof(Trader.Exchanges.Bitflyer))))
             {
                 _presenter.ShowError($"Unsupported exchnages. Cannot buy on {orderCandidate.BuyExchange} and sell on {orderCandidate.SellExchange} Process cancel...");
                 return;
             }
 
-            var buyLogic = ResolveExchangeLogic(orderCandidate.BuyExchange);
+            var buyLogic = _exchangeLogics.SingleOrDefault(p=>p.GetType().Name == orderCandidate.BuyExchange+"Logic");
             var buyAvailable = await buyLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
 
             var beforeBuyExchangeAvailableBaseAmount = buyAvailable.Item1;
@@ -49,24 +53,23 @@ namespace Trader
             }
 
 
-            var sellLogic = ResolveExchangeLogic(orderCandidate.SellExchange);
+             var sellLogic = _exchangeLogics.SingleOrDefault(p=>p.GetType().Name == orderCandidate.SellExchange);
 
+            // var sellAvailable = await sellLogic.GetAvailableAmountAsync("BTCEUR"); //Always selling BTC for EUR
 
-            var sellAvailable = await sellLogic.GetAvailableAmountAsync("BTCEUR"); //Always selling BTC for EUR
-
-            var beforeSellExchangeAvailableBaseAmount = sellAvailable.Item1;
-            var beforeSellExchangeAvailableQuoteAmount = sellAvailable.Item2;
-            if (beforeSellExchangeAvailableBaseAmount == null || beforeSellExchangeAvailableBaseAmount < orderCandidate.Amount)
-            {
-                var message = $"{orderCandidate.SellExchange} balance of {beforeSellExchangeAvailableBaseAmount } BTC too low for trade (required {orderCandidate.Amount} BTC). Process cancel...";
-                _presenter.ShowError(message);
-                if (!LowCreditWarningSent)
-                {
-                    LowCreditWarningSent = true;
-                    await _presenter.SendMessageAsync($"Not enough BTC balance on {orderCandidate.SellExchange}", message);
-                }
-                return;
-            }
+            // var beforeSellExchangeAvailableBaseAmount = sellAvailable.Item1;
+            // var beforeSellExchangeAvailableQuoteAmount = sellAvailable.Item2;
+            // if (beforeSellExchangeAvailableBaseAmount == null || beforeSellExchangeAvailableBaseAmount < orderCandidate.Amount)
+            // {
+            //     var message = $"{orderCandidate.SellExchange} balance of {beforeSellExchangeAvailableBaseAmount } BTC too low for trade (required {orderCandidate.Amount} BTC). Process cancel...";
+            //     _presenter.ShowError(message);
+            //     if (!LowCreditWarningSent)
+            //     {
+            //         LowCreditWarningSent = true;
+            //         await _presenter.SendMessageAsync($"Not enough BTC balance on {orderCandidate.SellExchange}", message);
+            //     }
+            //     return;
+            // }
 
 
 
@@ -77,8 +80,8 @@ namespace Trader
             arbitrage.BeforeBuyExchangeAvailableBaseAmount = beforeBuyExchangeAvailableBaseAmount;
             arbitrage.BeforeBuyExchangeAvailableQuoteAmount = beforeBuyExchangeAvailableQuoteAmount;
 
-            arbitrage.BeforeSellExchangeAvailableBaseAmount = beforeSellExchangeAvailableBaseAmount;
-            arbitrage.BeforeSellExchangeAvailableQuoteAmount = beforeSellExchangeAvailableQuoteAmount;
+            // arbitrage.BeforeSellExchangeAvailableBaseAmount = beforeSellExchangeAvailableBaseAmount;
+            // arbitrage.BeforeSellExchangeAvailableQuoteAmount = beforeSellExchangeAvailableQuoteAmount;
 
             _context.Arbitrages.Add(arbitrage);
 
@@ -98,18 +101,18 @@ namespace Trader
             }
 
 
-            var sellResult = await sellLogic.SellMarketAsync(orderCandidate);
-            _presenter.ShowSellResult(sellResult);
+            // var sellResult = await sellLogic.SellMarketAsync(orderCandidate);
+            // _presenter.ShowSellResult(sellResult);
 
-            _context.EnrichSell(arbitrage, sellResult.Item2);
+            // _context.EnrichSell(arbitrage, sellResult.Item2);
 
-            if (!sellResult.Item1)
-            {
-                await FinalizeArbitrage(buyLogic, sellLogic, arbitrage);
+            // if (!sellResult.Item1)
+            // {
+            //     await FinalizeArbitrage(buyLogic, sellLogic, arbitrage);
 
-                await _presenter.SendMessageAsync("Arbitrage failed", "SellMarketAsync failed. Check OrderCandidate " + orderCandidate.Id, arbitrage);
-                return;
-            }
+            //     await _presenter.SendMessageAsync("Arbitrage failed", "SellMarketAsync failed. Check OrderCandidate " + orderCandidate.Id, arbitrage);
+            //     return;
+            // }
 
 
 
@@ -134,9 +137,9 @@ namespace Trader
             arbitrage.AfterBuyExchangeAvailableBaseAmount = buyAvailable.Item1;
             arbitrage.AfterBuyExchangeAvailableQuoteAmount = buyAvailable.Item2;
 
-            var sellAvailable = await sellLogic.GetAvailableAmountAsync("BTCEUR"); //Always selling BTC for EUR
-            arbitrage.AfterSellExchangeAvailableBaseAmount = sellAvailable.Item1;
-            arbitrage.AfterSellExchangeAvailableQuoteAmount = sellAvailable.Item2;
+            // var sellAvailable = await sellLogic.GetAvailableAmountAsync("BTCEUR"); //Always selling BTC for EUR
+            // arbitrage.AfterSellExchangeAvailableBaseAmount = sellAvailable.Item1;
+            // arbitrage.AfterSellExchangeAvailableQuoteAmount = sellAvailable.Item2;
 
 
             arbitrage.WalletBaseAmountSurplus = (arbitrage.AfterSellExchangeAvailableBaseAmount - arbitrage.BeforeSellExchangeAvailableBaseAmount) + (arbitrage.AfterBuyExchangeAvailableBaseAmount - arbitrage.BeforeBuyExchangeAvailableBaseAmount);
@@ -153,18 +156,7 @@ namespace Trader
 
 
 
-        private IExchangeLogic ResolveExchangeLogic(string exchange)
-        {
-            switch (exchange)
-            {
-                case nameof(Coinmate):
-                    return null;
-                case nameof(Binance):
-                    return null;
-                default:
-                    throw new Exception("Invalid exchnage");
-            }
-        }
+      
 
     }
 

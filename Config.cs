@@ -17,7 +17,7 @@ public static class Config
 
 
 
-    public static bool AutomatedTrading { get { return true; } }
+    public static bool AutomatedTrading { get { return false; } }
     public static double AutomatedTradingMinEstimatedProfitNetRate { get { return 0.49; } }
 
 

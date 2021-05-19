@@ -34,7 +34,7 @@ namespace Trader.PostgresDb
 
         //Buy exchange
 
-        public long? BuyOrderId { get; set; }
+        public string BuyOrderId { get; set; }
 
         public DateTime? BuyWhenCreated { get; set; }
 

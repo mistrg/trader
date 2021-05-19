@@ -28,8 +28,15 @@ Work Log
 13.3.2021 Looking for database storage, installing postgres on the server, saving everything to single database, Why so many arbitrages created,  Why processed even when not enough credit  (Coinmate account info not accessible)
 17.3.2021 Integrated other exchanges, Deployed version 22
 18.3.2021 Integrating many different exchanges
-19.3.2021 Adding telemetry and transparency measures
+19.3.2021 [~6000] Adding telemetry and transparency measures
+15.5.2021 Implementing Buy and Sell functionality on Bitbay
+17.5.2021 Implementing and testing Buy functionality on Bitbay
+19.5.2021 Implementing and testing Buy functionality on Bitbay, Change database to use orderId as string
 
+
+
+
+Dont use Price on BuyResult (it may not be real)
 
 
 Check why wallet and real profit does not match

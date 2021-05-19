@@ -444,7 +444,7 @@ namespace Trader.Coinmate
             }
 
             _presenter.ShowInfo($"Waiting for buy confirmation");
-            result.OrderId = buyResponse.data.Value;
+            result.OrderId = buyResponse.data.Value.ToString();
 
             Order response = null;
 
@@ -554,7 +554,7 @@ namespace Trader.Coinmate
             //Check the fees
             try
             {
-                var th = await GetTradeHistoryAsync(result.OrderId);
+                var th = await GetTradeHistoryAsync(long.Parse(result.OrderId));
                 if (th != null && th.data != null && th.data.Count > 0)
                 {
                     result.CummulativeFee = th.data.Sum(p => p.price != 0 ? p.fee / p.price : 0);

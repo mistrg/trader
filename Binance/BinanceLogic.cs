@@ -414,7 +414,7 @@ namespace Trader.Binance
                 buyResponse = await BuyLimitOrderAsync(orderCandidate.Pair, orderCandidate.Amount, orderCandidate.UnitAskPrice, orderCandidate.Id);
 
                 result.Status = buyResponse.status;
-                result.OrderId = buyResponse.orderId;
+                result.OrderId = buyResponse.orderId.ToString();
                 result.OriginalAmount = buyResponse.origQtyNum;
                 result.RemainingAmount = buyResponse.origQtyNum - buyResponse.executedQtyNum;
                 result.CummulativeFee = buyResponse.CummulativeFee ?? 0;

@@ -7,11 +7,49 @@ namespace Trader.Infrastructure
 {
     public static class Cryptography
     {
+
+        public static string HashHMAC512Hex(string data, string key)
+        {
+            string result = "";
+            try
+            {
+                var byteKey = Encoding.UTF8.GetBytes(key);
+
+                 var hash = new HMACSHA512(byteKey);
+                    var mac_data =  hash.ComputeHash(Encoding.UTF8.GetBytes(data));
+                
+                result = bytesToHex(mac_data);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            return result;
+        }
+
+        private static string bytesToHex(byte[] hashInBytes)
+        {
+
+            StringBuilder sb = new StringBuilder();
+
+            foreach (byte b in hashInBytes)
+            {
+                string bufstring = String.Format("{0:X2}", b);
+                sb.Append(bufstring);
+            }
+
+            return sb.ToString();
+
+        }
+
+
         public static string HashHMACHex(string keyHex, string message)
         {
-            var inp = Encoding.ASCII.GetBytes(keyHex);
+            var inp = Encoding.UTF8.GetBytes(keyHex);
             byte[] hash = HashHMAC(inp, StringEncode(message));
-            return HashEncode(hash);
+            //return HashEncode(hash);
+            return bytesToHex(hash);
         }
 
         private static string HashSHAHex(string innerKeyHex, string outerKeyHex, string message)
@@ -47,7 +85,7 @@ namespace Trader.Infrastructure
 
         private static byte[] StringEncode(string text)
         {
-            var encoding = new ASCIIEncoding();
+            var encoding = new UTF8Encoding();
             return encoding.GetBytes(text);
         }
 

@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Trader.Binance;
 using Trader.Coinmate;
@@ -23,7 +22,7 @@ namespace Trader
         private readonly IEnumerable<IExchangeLogic> _exchangeLogics;
 
         private readonly ObserverContext _ocontext;
-        public App(IConfiguration config, Estimator estimator,ObserverContext ocontext, Observer observer, Processor processor, PostgresContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
+        public App(IConfiguration config, Estimator estimator, ObserverContext ocontext, Observer observer, Processor processor, PostgresContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
         {
             _config = config;
             _processor = processor;
@@ -38,12 +37,49 @@ namespace Trader
         public async Task RunAsync()
         {
             Console.ResetColor();
-
-
             _ocontext.NewBotrun();
 
-            _presenter.ShowInfo($"Trader version {Config.Version} starting runId: {Config.RunId}!");
+            //var bb = _exchangeLogics.Single(p => p.GetType() == typeof(BitBayLogic));
+
+
+            //   "BTC-EUR","buy",0.0005,35450
+            var ocx = new OrderCandidate()
+            {
+                Amount = 0.0005, 
+                UnitAskPrice = 33100,
+                Pair = "BTCEUR",
+                BuyExchange = "BitBay",
+                SellExchange = "Bitflyer"
+            };
+
+            await _processor.ProcessOrderAsync(ocx);
             
+            //var x = await (bb as BitBayLogic).NewLimitOrderAsync("BTC-EUR","buy",0.0005,35450);
+
+            // var s = await (bb as BitBayLogic).NewLimitOrderAsync("BTC-EUR","sell",0.00049785,35500);
+            //x.completed == true and errors empty 
+            //? how to get parial buys
+            //? commissionValue  how to get fees
+            //? better rate?
+
+            //Buy are paid from  0.00000215 BTC => 
+            //SELLs are paid from 0.08 Euro
+
+
+
+
+
+           // var w = await (bb as BitBayLogic).GetTransactionsHistoryAsync("BTC-EUR", "55a59b41-b738-11eb-8513-0242ac110010");
+
+            //How to get specific offerId
+
+
+            //var x = await (bb as BitBayLogic).Cancel("BTC-EUR","buy",0.0005,30000);
+
+
+
+            _presenter.ShowInfo($"Trader version {Config.Version} starting runId: {Config.RunId}!");
+
             var bl = _exchangeLogics.Single(p => p.GetType() == typeof(BinanceLogic));
             var cl = _exchangeLogics.Single(p => p.GetType() == typeof(CoinmateLogic));
 
