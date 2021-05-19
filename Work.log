@@ -34,9 +34,9 @@ Work Log
 19.5.2021 Implementing and testing Buy functionality on Bitbay, Change database to use orderId as string
 
 
-
-
+Store keys more securely
 Dont use Price on BuyResult (it may not be real)
+
 
 
 Check why wallet and real profit does not match

@@ -28,6 +28,26 @@ namespace Trader.Infrastructure
             return result;
         }
 
+        public static string HashHMAC256Hex(string data, string key)
+        {
+            string result = "";
+            try
+            {
+                var byteKey = Encoding.UTF8.GetBytes(key);
+
+                 var hash = new HMACSHA256(byteKey);
+                    var mac_data =  hash.ComputeHash(Encoding.UTF8.GetBytes(data));
+                
+                result = bytesToHex(mac_data);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
+
+            return result;
+        }
+
         private static string bytesToHex(byte[] hashInBytes)
         {
 
@@ -46,10 +66,9 @@ namespace Trader.Infrastructure
 
         public static string HashHMACHex(string keyHex, string message)
         {
-            var inp = Encoding.UTF8.GetBytes(keyHex);
+            var inp = Encoding.ASCII.GetBytes(keyHex);
             byte[] hash = HashHMAC(inp, StringEncode(message));
-            //return HashEncode(hash);
-            return bytesToHex(hash);
+            return HashEncode(hash);
         }
 
         private static string HashSHAHex(string innerKeyHex, string outerKeyHex, string message)

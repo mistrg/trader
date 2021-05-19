@@ -27,7 +27,7 @@ namespace Trader
         {
 
 
-            if (!((orderCandidate.BuyExchange == nameof(Trader.BitBay) && orderCandidate.SellExchange == nameof(Trader.Exchanges.Bitflyer))))
+            if (!((orderCandidate.BuyExchange == nameof(Trader.BitBay) && orderCandidate.SellExchange == nameof(Trader.BitFlyer))))
             {
                 _presenter.ShowError($"Unsupported exchnages. Cannot buy on {orderCandidate.BuyExchange} and sell on {orderCandidate.SellExchange} Process cancel...");
                 return;

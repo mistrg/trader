@@ -13,7 +13,6 @@ using System.Web;
 namespace Trader.BitBay
 {
 
-    //TODO Test cancel
 
     public class BitBayLogic : BaseExchange, IExchangeLogic
     {
@@ -92,40 +91,37 @@ namespace Trader.BitBay
         {
             try
             {
-                using (HttpClient httpClient = GetHttpClient())
+
+                var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+                var signatureInput = _publicApiKey + nonce;
+
+                var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
+
+                httpClient.DefaultRequestHeaders.Clear();
+                httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
+                httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
+                httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
+                httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
+
+                var response = await httpClient.GetAsync(baseUrl + "balances/BITBAY/balance");
+                if (response.IsSuccessStatusCode)
                 {
 
-                    var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-                    var signatureInput = _publicApiKey + nonce;
-
-                    var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
-
-                    httpClient.DefaultRequestHeaders.Clear();
-                    httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
-                    httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
-                    httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
-                    httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
-
-                    var response = await httpClient.GetAsync(baseUrl + "balances/BITBAY/balance");
-                    if (response.IsSuccessStatusCode)
+                    using (var stream = await response.Content.ReadAsStreamAsync())
                     {
+                        var res = await JsonSerializer.DeserializeAsync<BalanceRoot>(stream);
+                        if (res.status != "Ok")
+                            throw new Exception("Status not ok");
 
-                        using (var stream = await response.Content.ReadAsStreamAsync())
-                        {
-                            var res = await JsonSerializer.DeserializeAsync<BalanceRoot>(stream);
-                            if (res.status != "Ok")
-                                throw new Exception("Status not ok");
+                        var btc = res.balances.SingleOrDefault(p => p.currency == currencyPair.Substring(0, 3));
+                        var euro = res.balances.SingleOrDefault(p => p.currency == currencyPair.Substring(3, 3));
 
-                            var btc = res.balances.SingleOrDefault(p => p.currency == currencyPair.Substring(0, 3));
-                            var euro = res.balances.SingleOrDefault(p => p.currency == currencyPair.Substring(3, 3));
-
-                            return new Tuple<double?, double?>(btc?.availableFunds, euro?.availableFunds);
-
-                        }
-
+                        return new Tuple<double?, double?>(btc?.availableFunds, euro?.availableFunds);
 
                     }
+
+
                 }
             }
             catch
@@ -232,15 +228,15 @@ namespace Trader.BitBay
                 _presenter.ShowError($"GetOrderByOrderIdAsync failed. {ex} Retrying...");
             }
 
-            
+
             orderCandidate.Amount -= result.RemainingAmount.Value;
 
 
 
 
-             _presenter.ShowInfo($"Buy successful");
+            _presenter.ShowInfo($"Buy successful");
 
-             return new Tuple<bool, BuyResult>(true, result);
+            return new Tuple<bool, BuyResult>(true, result);
 
         }
 
@@ -288,103 +284,97 @@ namespace Trader.BitBay
 
         public async Task<TransactionHistoryResponse> GetTransactionsHistoryAsync(string currencyPair = "", string offerId = "")
         {
-            using (HttpClient httpClient = new HttpClient())
+
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            var signatureInput = _publicApiKey + nonce;
+
+            var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
+
+            var request = new QueryRequest();
+
+            if (!string.IsNullOrWhiteSpace(currencyPair))
+                request.markets = new List<string>() { currencyPair };
+
+            if (!string.IsNullOrWhiteSpace(offerId))
+                request.offerId = offerId;
+
+
+
+            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
+            httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
+            httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
+            httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
+
+            string xr = JsonSerializer.Serialize(request);
+
+            var qs = HttpUtility.UrlEncode(xr);
+
+
+            var result = await httpClient.GetAsync(baseUrl + "trading/history/transactions?query=" + qs);
+
+
+            if (!result.IsSuccessStatusCode)
             {
-
-                var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-                var signatureInput = _publicApiKey + nonce;
-
-                var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
-
-                var request = new QueryRequest();
-
-                if (!string.IsNullOrWhiteSpace(currencyPair))
-                    request.markets = new List<string>() { currencyPair };
-
-                if (!string.IsNullOrWhiteSpace(offerId))
-                    request.offerId = offerId;
-
-
-
-                httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
-                httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
-                httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
-                httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
-
-                string xr = JsonSerializer.Serialize(request);
-
-                var qs = HttpUtility.UrlEncode(xr);
-
-
-                var result = await httpClient.GetAsync(baseUrl + "trading/history/transactions?query=" + qs);
-
-
-                if (!result.IsSuccessStatusCode)
-                {
-                    _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
-                }
-
-                var resa = await result.Content.ReadAsStringAsync();
-                Console.WriteLine(resa);
-
-                using (var stream = await result.Content.ReadAsStreamAsync())
-                {
-                    var res = await JsonSerializer.DeserializeAsync<TransactionHistoryResponse>(stream);
-                    return res;
-                }
-
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
             }
+
+            var resa = await result.Content.ReadAsStringAsync();
+            Console.WriteLine(resa);
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<TransactionHistoryResponse>(stream);
+                return res;
+            }
+
 
         }
 
         public async Task<OfferResponse> NewLimitOrderAsync(string currencyPair, string offerType, double amount, double rate)
         {
-            using (HttpClient httpClient = new HttpClient())
+            var request = new OfferRequest();
+            request.amount = amount;
+            request.rate = rate;
+            request.offerType = offerType; //buy / sell
+            request.mode = "limit";
+            request.immediateOrCancel = true;
+
+            var json = JsonSerializer.Serialize<OfferRequest>(request);
+
+            var data = new StringContent(json, Encoding.UTF8, "application/json");
+
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            var signatureInput = _publicApiKey + nonce + json;
+
+            var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
+
+            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
+            httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
+            httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
+            httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
+
+
+            var result = await httpClient.PostAsync(baseUrl + "trading/offer/" + currencyPair, data);
+
+
+            if (!result.IsSuccessStatusCode)
             {
-                var request = new OfferRequest();
-                request.amount = amount;
-                request.rate = rate;
-                request.offerType = offerType; //buy / sell
-                request.mode = "limit";
-                request.immediateOrCancel = true;
-
-                var json = JsonSerializer.Serialize<OfferRequest>(request);
-
-                var data = new StringContent(json, Encoding.UTF8, "application/json");
-
-                var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-                var signatureInput = _publicApiKey + nonce + json;
-
-                var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
-
-                httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
-                httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
-                httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
-                httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
-
-
-                var result = await httpClient.PostAsync(baseUrl + "trading/offer/" + currencyPair, data);
-
-
-                if (!result.IsSuccessStatusCode)
-                {
-                    _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
-                }
-
-
-                _presenter.ShowInfo(await result.Content.ReadAsStringAsync());
-
-                using (var stream = await result.Content.ReadAsStreamAsync())
-                {
-                    var res = await JsonSerializer.DeserializeAsync<OfferResponse>(stream);
-                    return res;
-                }
-
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
             }
+
+
+            _presenter.ShowInfo(await result.Content.ReadAsStringAsync());
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<OfferResponse>(stream);
+                return res;
+            }
+
         }
         public Task PrintAccountInformationAsync()
         {
