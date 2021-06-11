@@ -2,9 +2,11 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Trader.Binance;
 using Trader.Coinmate;
+using Trader.Infrastructure;
 using Trader.PostgresDb;
 
 namespace Trader
@@ -22,11 +24,13 @@ namespace Trader
         private readonly IEnumerable<IExchangeLogic> _exchangeLogics;
 
         private readonly ObserverContext _ocontext;
-        public App(IConfiguration config, Estimator estimator, ObserverContext ocontext, Observer observer, Processor processor, PostgresContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
+        private readonly KeyVaultCache _keyVaultCache;
+        public App(IConfiguration config,KeyVaultCache keyVaultCache, Estimator estimator, ObserverContext ocontext, Observer observer, Processor processor, PostgresContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
         {
             _config = config;
             _processor = processor;
             _ocontext = ocontext;
+            _keyVaultCache = keyVaultCache;
             _context = context;
             _exchangeLogics = exchangeLogics;
             _presenter = presenter;
@@ -39,9 +43,19 @@ namespace Trader
             Console.ResetColor();
             _ocontext.NewBotrun();
 
-            var bb = _exchangeLogics.Single(p => p.GetType() == typeof(BitFlyer.BitFlyerLogic));
+            var bb = _exchangeLogics.Single(p => p.GetType() == typeof(BitPanda.BitPandaLogic));
 
-            var x = await bb.GetAvailableAmountAsync("BTCEUR");
+            //var x = await bb.GetAvailableAmountAsync("BTCEUR");
+            var f = await bb.GetTradingTakerFeeRateAsync();
+            Console.WriteLine($"{f}");
+
+
+             var ww = _exchangeLogics.Single(p => p.GetType() == typeof(BitBay.BitBayLogic));
+
+//            var xe = await ww.GetAvailableAmountAsync("BTCEUR");
+            var fa = await ww.GetTradingTakerFeeRateAsync();
+
+            Console.WriteLine($"{fa}");
 
             //   "BTC-EUR","buy",0.0005,35450
             // var ocx = new OrderCandidate()
@@ -54,7 +68,7 @@ namespace Trader
             // };
 
             // await _processor.ProcessOrderAsync(ocx);
-            
+
             //var x = await (bb as BitBayLogic).NewLimitOrderAsync("BTC-EUR","buy",0.0005,35450);
 
             // var s = await (bb as BitBayLogic).NewLimitOrderAsync("BTC-EUR","sell",0.00049785,35500);
@@ -70,7 +84,7 @@ namespace Trader
 
 
 
-           // var w = await (bb as BitBayLogic).GetTransactionsHistoryAsync("BTC-EUR", "55a59b41-b738-11eb-8513-0242ac110010");
+            // var w = await (bb as BitBayLogic).GetTransactionsHistoryAsync("BTC-EUR", "55a59b41-b738-11eb-8513-0242ac110010");
 
             //How to get specific offerId
 
@@ -80,14 +94,6 @@ namespace Trader
 
 
             _presenter.ShowInfo($"Trader version {Config.Version} starting runId: {Config.RunId}!");
-
-            var bl = _exchangeLogics.Single(p => p.GetType() == typeof(BinanceLogic));
-            var cl = _exchangeLogics.Single(p => p.GetType() == typeof(CoinmateLogic));
-
-            await cl.PrintAccountInformationAsync();
-            await bl.PrintAccountInformationAsync();
-
-
 
             //   var buyAvailable = await _coinmateLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
             //     var sellAvailable = await _binanceLogic.GetAvailableAmountAsync("BTCEUR"); //Always buying BTC for EUR
@@ -111,23 +117,23 @@ namespace Trader
 
             while (true)
             {
+                Thread.Sleep(1111);
+                // var bob = await bl.GetOrderBookAsync();
+                // var cob = await cl.GetOrderBookAsync();
 
-                var bob = await bl.GetOrderBookAsync();
-                var cob = await cl.GetOrderBookAsync();
+                // var db = bob.Union(cob);
 
-                var db = bob.Union(cob);
+                // var oc = _estimator.Run(db);
 
-                var oc = _estimator.Run(db);
-
-                if (oc != null)
-                {
-                    _presenter.PrintOrderCandidate(oc);
+                // if (oc != null)
+                // {
+                //     _presenter.PrintOrderCandidate(oc);
 
 
-                    var processOrder = Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate;
-                    if (processOrder)
-                        await _processor.ProcessOrderAsync(oc);
-                }
+                //     var processOrder = Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate;
+                //     if (processOrder)
+                //         await _processor.ProcessOrderAsync(oc);
+                // }
             }
         }
     }

@@ -9,11 +9,6 @@ using Trader.PostgresDb;
 namespace Trader
 {
 
-
-    //Kraken https://api.kraken.com/0/public/Depth?pair=BTCEUR
-    //Coinbase https://api.pro.coinbase.com/products/BTC-EUR/book?level=2
-
-
     public class Observer
     {
         private readonly ObserverContext _context;
@@ -52,7 +47,9 @@ namespace Trader
 
                 if (oc != null)
                 {
-                    await _context.CreateOrSkipOrderCandidateAsync(oc);
+                    var isDuplicate = await _context.CreateOrSkipOrderCandidateAsync(oc);
+                    if (!isDuplicate)
+                        _presenter.PrintOrderCandidate(oc);
                 }
 
                 stopWatch.Stop();

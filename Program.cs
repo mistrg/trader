@@ -1,11 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Trader.Email;
+using Trader.Infrastructure;
 using Trader.PostgresDb;
 
 namespace Trader
@@ -16,7 +15,7 @@ namespace Trader
         {
             var services = ConfigureServices();
             var serviceProvider = services.BuildServiceProvider();
-
+            
             await serviceProvider.GetService<App>().RunAsync();
         }
 
@@ -27,6 +26,7 @@ namespace Trader
             var config = LoadConfiguration();
             services.AddSingleton(config);
 
+
             var x = config.GetSection("SmtpSettings");
 
             services.Configure<SmtpSettings>(setting => x.Bind(setting));
@@ -36,6 +36,7 @@ namespace Trader
             services.AddSingleton<Presenter>();
             services.AddSingleton<Observer>();
             services.AddSingleton<Estimator>();
+            services.AddSingleton<KeyVaultCache>();
 
 
             services.RegisterAllTypes<IExchangeLogic>(new[] { typeof(Program).Assembly });

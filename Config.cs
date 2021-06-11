@@ -1,16 +1,16 @@
 public static class Config
 {
-    public static string CoinmatePublicKey { get { return "Ik7aDMVzVhPh5tZsz12Gpp_U62cZTbf-a9Id6VLHQZ8"; } }
-    public static string CoinmatePrivateKey { get { return "iyt6UAxhroifDQBCkPTNhnjVL8LRI7TgPpY8AAgisQ8"; } }
-    public static string CoinmateClientId { get { return "28298"; } }
+    public static string CoinmatePublicKey { get { return ""; } }
+    public static string CoinmatePrivateKey { get { return ""; } }
+    public static string CoinmateClientId { get { return ""; } }
 
 
 
-    public static string BinanceApiKey { get { return "PhWiIMtXBRVucLWpsmz1TSffWN1jgpvE9TD3T7cLwPtgG1MdmLkqkx1GBr7EdzxW"; } }
-    public static string BinanceSecretKey { get { return "wkLjUrU6Jfa9XbZ8kxysr7xajMq67fySuxysIjxYnhpoYi46LtUIrTkfnZC052Y1"; } }
+    public static string BinanceApiKey { get { return ""; } }
+    public static string BinanceSecretKey { get { return ""; } }
 
 
-    public static int Version { get { return 23; } }
+    public static int Version { get { return 24; } }
     public static string RunId { get; set; }
 
     public static string PostgresConnectionString { get { return "Server = drbalek.cz; Port = 5432; Database = Drbor; User Id = drborbot; Password = G3ed9lPii3; "; } }

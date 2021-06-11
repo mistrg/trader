@@ -8,6 +8,8 @@ namespace Trader.Exchanges
 {
     public class BaseExchange
     {
+        protected double TradingFee { get; set; }
+        protected DateTime? WhenTradingFeeLastCheck { get; set; }
         private readonly ObserverContext _context;
 
         public long OrderBookTotalCount { get; set; }

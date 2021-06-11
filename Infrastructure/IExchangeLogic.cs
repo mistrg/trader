@@ -8,7 +8,8 @@ using Trader.PostgresDb;
 public interface IExchangeLogic
 {
     Task SaveTelemetryAsync();
-    double GetTradingTakerFeeRate();
+    Task<double> GetTradingTakerFeeRateAsync();
+    
     Task<Tuple<double?, double?>> GetAvailableAmountAsync(string currencyPair);
     Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate);
     Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate);

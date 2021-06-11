@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -15,19 +14,18 @@ namespace Trader.BitFlyer
     {
 
         public List<string> Pairs { get; }
-        private string _publicApiKey = "CwQ7vZcFcPbAsi1dN3au8E";
-        private string _privateApiKey = "q5uPgau2w2Q4o8Ks+r+CVeXxiv72DJ4W1HGzxZKrEkU=";
-
 
         private string baseUrl = "https://api.bitflyer.com";
 
         const string pair = "BTC_EUR";
         private static readonly HttpClient httpClient = new HttpClient();
         private readonly Presenter _presenter;
+        private readonly KeyVaultCache _keyVaultCache;
 
-        public BitFlyerLogic(Presenter presenter, ObserverContext context)
+        public BitFlyerLogic(Presenter presenter, KeyVaultCache keyVaultCache, ObserverContext context)
                 : base(context)
         {
+            _keyVaultCache = keyVaultCache;
             _presenter = presenter;
         }
 
@@ -48,11 +46,11 @@ namespace Trader.BitFlyer
                         using (var stream = await response.Content.ReadAsStreamAsync())
                         {
                             var res = await JsonSerializer.DeserializeAsync<OrderBookResponse>(stream);
-
+                            var fee = await GetTradingTakerFeeRateAsync();
                             foreach (var item in res.asks)
-                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(BitFlyer), Pair = upair, amount = item.size, askPrice = item.price });
+                                result.Add(new DBItem() { TakerFeeRate = fee, Exch = nameof(BitFlyer), Pair = upair, amount = item.size, askPrice = item.price });
                             foreach (var item in res.bids)
-                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(BitFlyer), Pair = upair, amount = item.size, bidPrice = item.price });
+                                result.Add(new DBItem() { TakerFeeRate = fee, Exch = nameof(BitFlyer), Pair = upair, amount = item.size, bidPrice = item.price });
                         }
 
                     }
@@ -68,9 +66,52 @@ namespace Trader.BitFlyer
 
         }
 
-        public double GetTradingTakerFeeRate()
+        public async Task<double> GetTradingTakerFeeRateAsync()
         {
-            return 0.001;
+            if (WhenTradingFeeLastCheck == null || WhenTradingFeeLastCheck < DateTime.Now.AddDays(1))
+            {
+                try
+                {
+                    var publicApiKey = _keyVaultCache.GetCachedSecret("BitFlyerApiKey");
+                    var privateApiKey = _keyVaultCache.GetCachedSecret("BitFlyerApiSecret");
+                    var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+                    var urlPath = "/v1/me/gettradingcommission?product_code=" + pair;
+                    var jsonBody = "";
+
+                    var signatureInput = $"{nonce}GET{urlPath}{jsonBody}";
+
+                    var hashHMACHex = Cryptography.HashHMACHex(privateApiKey, signatureInput);
+                    httpClient.DefaultRequestHeaders.Clear();
+                    httpClient.DefaultRequestHeaders.Add("ACCESS-KEY", publicApiKey);
+                    httpClient.DefaultRequestHeaders.Add("ACCESS-SIGN", hashHMACHex);
+                    httpClient.DefaultRequestHeaders.Add("ACCESS-TIMESTAMP", nonce.ToString());
+
+                    var response = await httpClient.GetAsync(baseUrl + urlPath);
+                    if (response.IsSuccessStatusCode)
+                    {
+
+                        using (var stream = await response.Content.ReadAsStreamAsync())
+                        {
+                            var res = await JsonSerializer.DeserializeAsync<GetComminssionResponse>(stream);
+                            WhenTradingFeeLastCheck = DateTime.Now;
+                            TradingFee = res.commission_rate;
+
+                        }
+
+
+                    }
+                }
+                catch
+                {
+                }
+
+
+            }
+            //            return 0.001;
+            if (TradingFee == 0)
+                throw new Exception("Invalid trading fee");
+
+            return TradingFee;
 
         }
         private string GetLongPair(string shortPair)
@@ -87,16 +128,17 @@ namespace Trader.BitFlyer
         {
             try
             {
-
+                var publicApiKey = _keyVaultCache.GetCachedSecret("BitFlyerApiKey");
+                var privateApiKey = _keyVaultCache.GetCachedSecret("BitFlyerApiSecret");
                 var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                 var urlPath = "/v1/me/getbalance";
                 var jsonBody = "";
-                
+
                 var signatureInput = $"{nonce}GET{urlPath}{jsonBody}";
 
-                var hashHMACHex = Cryptography.HashHMACHex(_privateApiKey,signatureInput);
+                var hashHMACHex = Cryptography.HashHMACHex(privateApiKey, signatureInput);
                 httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("ACCESS-KEY", _publicApiKey);
+                httpClient.DefaultRequestHeaders.Add("ACCESS-KEY", publicApiKey);
                 httpClient.DefaultRequestHeaders.Add("ACCESS-SIGN", hashHMACHex);
                 httpClient.DefaultRequestHeaders.Add("ACCESS-TIMESTAMP", nonce.ToString());
 
@@ -107,7 +149,7 @@ namespace Trader.BitFlyer
                     using (var stream = await response.Content.ReadAsStreamAsync())
                     {
                         var res = await JsonSerializer.DeserializeAsync<List<GetBalanceResponse>>(stream);
-                        
+
 
                         var btc = res.SingleOrDefault(p => p.currency_code == currencyPair.Substring(0, 3));
                         var euro = res.SingleOrDefault(p => p.currency_code == currencyPair.Substring(3, 3));

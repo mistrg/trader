@@ -61,11 +61,12 @@ namespace Trader.Exchanges
                         using (var stream = await response.Content.ReadAsStreamAsync())
                         {
                             var res = await JsonSerializer.DeserializeAsync<Root>(stream);
+                            var fee = await GetTradingTakerFeeRateAsync();
 
                             foreach (var item in res.asks)
-                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Luno), Pair = upair, amount = double.Parse(item.volume), askPrice = double.Parse(item.price) });
+                                result.Add(new DBItem() { TakerFeeRate = fee, Exch = nameof(Luno), Pair = upair, amount = double.Parse(item.volume), askPrice = double.Parse(item.price) });
                             foreach (var item in res.bids)
-                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Luno), Pair = upair, amount = double.Parse(item.volume), bidPrice = double.Parse(item.price) });
+                                result.Add(new DBItem() { TakerFeeRate = fee, Exch = nameof(Luno), Pair = upair, amount = double.Parse(item.volume), bidPrice = double.Parse(item.price) });
                         }
 
                     }
@@ -81,7 +82,7 @@ namespace Trader.Exchanges
 
         }
 
-        public double GetTradingTakerFeeRate()
+        public async Task<double> GetTradingTakerFeeRateAsync()
         {
             return 0.001;
 

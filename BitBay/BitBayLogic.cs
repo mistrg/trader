@@ -16,8 +16,6 @@ namespace Trader.BitBay
 
     public class BitBayLogic : BaseExchange, IExchangeLogic
     {
-        private string _publicApiKey = "b0f78148-f751-40b4-b645-a39261c60354";
-        private string _privateApiKey = "e97656df-60cd-4116-b6df-369e8124eb51";
 
         private string baseUrl = "https://api.bitbay.net/rest/";
         public List<string> Pairs { get; }
@@ -25,13 +23,15 @@ namespace Trader.BitBay
         private static readonly HttpClient httpClient = new HttpClient();
 
         private readonly Presenter _presenter;
+        private readonly KeyVaultCache _keyVaultCache;
 
 
-        public BitBayLogic(Presenter presenter, ObserverContext context)
+        public BitBayLogic(Presenter presenter, KeyVaultCache keyVaultCache, ObserverContext context)
                 : base(context)
         {
             Pairs = new List<string>() { "BTC-EUR" };
             _presenter = presenter;
+            _keyVaultCache = keyVaultCache;
         }
 
 
@@ -61,11 +61,11 @@ namespace Trader.BitBay
                         using (var stream = await response.Content.ReadAsStreamAsync())
                         {
                             var res = await JsonSerializer.DeserializeAsync<OrderBookResponse>(stream);
-
+                            var fee  = await GetTradingTakerFeeRateAsync();
                             foreach (var item in res.buy)
-                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(BitBay), Pair = upair, amount = double.Parse(item.ca), askPrice = double.Parse(item.ra) });
+                                result.Add(new DBItem() { TakerFeeRate = fee, Exch = nameof(BitBay), Pair = upair, amount = double.Parse(item.ca), askPrice = double.Parse(item.ra) });
                             foreach (var item in res.sell)
-                                result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(BitBay), Pair = upair, amount = double.Parse(item.ca), bidPrice = double.Parse(item.ra) });
+                                result.Add(new DBItem() { TakerFeeRate = fee, Exch = nameof(BitBay), Pair = upair, amount = double.Parse(item.ca), bidPrice = double.Parse(item.ra) });
                         }
 
                     }
@@ -81,9 +81,53 @@ namespace Trader.BitBay
 
         }
 
-        public double GetTradingTakerFeeRate()
+        public async Task<double> GetTradingTakerFeeRateAsync()
         {
-            return 0.0043;
+            //return 0.0043;
+            if (WhenTradingFeeLastCheck == null || WhenTradingFeeLastCheck < DateTime.Now.AddDays(1))
+            {
+                try
+                {
+
+                    var publicApiKey = _keyVaultCache.GetCachedSecret("BitBayApiKey");
+                    var privateApiKey = _keyVaultCache.GetCachedSecret("BitBayApiSecret");
+                    var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+                    var signatureInput = publicApiKey + nonce;
+
+                    var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, privateApiKey);
+
+                    httpClient.DefaultRequestHeaders.Clear();
+                    httpClient.DefaultRequestHeaders.Add("API-Key", publicApiKey);
+                    httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
+                    httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
+                    httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
+
+                    var response = await httpClient.GetAsync(baseUrl + "trading/config/"+pair);
+                    if (response.IsSuccessStatusCode)
+                    {
+
+                        using (var stream = await response.Content.ReadAsStreamAsync())
+                        {
+                            var res = await JsonSerializer.DeserializeAsync<FeeResponse>(stream);
+                            if (res.status != "Ok")
+                                throw new Exception("Status not ok");
+
+                            WhenTradingFeeLastCheck = DateTime.Now;
+                            TradingFee = double.Parse(res?.config?.buy?.commissions?.taker);
+                        }
+                    }
+                }
+                catch
+                {
+                }
+
+
+            }
+            if (TradingFee == 0)
+                throw new Exception("Invalid trading fee");
+
+            return TradingFee;
 
         }
 
@@ -92,14 +136,16 @@ namespace Trader.BitBay
             try
             {
 
+                var publicApiKey = _keyVaultCache.GetCachedSecret("BitBayApiKey");
+                var privateApiKey = _keyVaultCache.GetCachedSecret("BitBayApiSecret");
                 var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-                var signatureInput = _publicApiKey + nonce;
+                var signatureInput = publicApiKey + nonce;
 
-                var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
+                var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, privateApiKey);
 
                 httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
+                httpClient.DefaultRequestHeaders.Add("API-Key", publicApiKey);
                 httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
                 httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
                 httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
@@ -247,49 +293,50 @@ namespace Trader.BitBay
 
         public async Task<ActiveOrderResponse> GetActiveOrdersAsync(string currencyPair)
         {
-            using (HttpClient httpClient = GetHttpClient())
+
+            var publicApiKey = _keyVaultCache.GetCachedSecret("BitBayApiKey");
+            var privateApiKey = _keyVaultCache.GetCachedSecret("BitBayApiSecret");
+            var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
+
+            var signatureInput = publicApiKey + nonce;
+
+            var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, privateApiKey);
+
+            httpClient.DefaultRequestHeaders.Clear();
+            httpClient.DefaultRequestHeaders.Add("API-Key", publicApiKey);
+            httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
+            httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
+            httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
+
+
+            var result = await httpClient.GetAsync(baseUrl + "trading/offer/" + currencyPair);
+
+
+            if (!result.IsSuccessStatusCode)
             {
-
-                var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-
-                var signatureInput = _publicApiKey + nonce;
-
-                var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
-
-                httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
-                httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
-                httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
-                httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
-
-
-                var result = await httpClient.GetAsync(baseUrl + "trading/offer/" + currencyPair);
-
-
-                if (!result.IsSuccessStatusCode)
-                {
-                    _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
-                }
-
-                using (var stream = await result.Content.ReadAsStreamAsync())
-                {
-                    var res = await JsonSerializer.DeserializeAsync<ActiveOrderResponse>(stream);
-                    return res;
-                }
-
+                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
             }
+
+            using (var stream = await result.Content.ReadAsStreamAsync())
+            {
+                var res = await JsonSerializer.DeserializeAsync<ActiveOrderResponse>(stream);
+                return res;
+            }
+
+
 
         }
 
 
         public async Task<TransactionHistoryResponse> GetTransactionsHistoryAsync(string currencyPair = "", string offerId = "")
         {
-
+            var publicApiKey = _keyVaultCache.GetCachedSecret("BitBayApiKey");
+            var privateApiKey = _keyVaultCache.GetCachedSecret("BitBayApiSecret");
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = _publicApiKey + nonce;
+            var signatureInput = publicApiKey + nonce;
 
-            var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
+            var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, privateApiKey);
 
             var request = new QueryRequest();
 
@@ -302,7 +349,7 @@ namespace Trader.BitBay
 
 
             httpClient.DefaultRequestHeaders.Clear();
-            httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
+            httpClient.DefaultRequestHeaders.Add("API-Key", publicApiKey);
             httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
             httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
             httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
@@ -334,6 +381,8 @@ namespace Trader.BitBay
 
         public async Task<OfferResponse> NewLimitOrderAsync(string currencyPair, string offerType, double amount, double rate)
         {
+            var publicApiKey = _keyVaultCache.GetCachedSecret("BitBayApiKey");
+            var privateApiKey = _keyVaultCache.GetCachedSecret("BitBayApiSecret");
             var request = new OfferRequest();
             request.amount = amount;
             request.rate = rate;
@@ -347,12 +396,12 @@ namespace Trader.BitBay
 
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = _publicApiKey + nonce + json;
+            var signatureInput = publicApiKey + nonce + json;
 
-            var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, _privateApiKey);
+            var hashHMACHex = Cryptography.HashHMAC512Hex(signatureInput, privateApiKey);
 
             httpClient.DefaultRequestHeaders.Clear();
-            httpClient.DefaultRequestHeaders.Add("API-Key", _publicApiKey);
+            httpClient.DefaultRequestHeaders.Add("API-Key", publicApiKey);
             httpClient.DefaultRequestHeaders.Add("API-Hash", hashHMACHex.ToLower());
             httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
             httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());

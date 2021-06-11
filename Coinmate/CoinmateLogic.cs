@@ -151,15 +151,15 @@ namespace Trader.Coinmate
 
                 if (res?.data == null)
                     return result;
-
+                var fee = await GetTradingTakerFeeRateAsync();
                 foreach (var x in res.data.asks)
                 {
-                    result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price });
+                    result.Add(new DBItem() { TakerFeeRate = fee, Exch = nameof(Coinmate), Pair = upair, amount = x.amount, askPrice = x.price });
                 }
 
                 foreach (var x in res.data.bids)
                 {
-                    result.Add(new DBItem() { TakerFeeRate = GetTradingTakerFeeRate(), Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
+                    result.Add(new DBItem() { TakerFeeRate = fee, Exch = nameof(Coinmate), Pair = upair, amount = x.amount, bidPrice = x.price });
                 }
             }
             catch
@@ -782,7 +782,7 @@ namespace Trader.Coinmate
         }
 
 
-        public double GetTradingTakerFeeRate()
+        public async Task<double> GetTradingTakerFeeRateAsync()
         {
             return 0.0023;
         }
