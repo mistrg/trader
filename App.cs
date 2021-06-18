@@ -44,9 +44,8 @@ namespace Trader
             _ocontext.NewBotrun();
 
             var bb = _exchangeLogics.Single(p => p.GetType() == typeof(BitPanda.BitPandaLogic));
-
             //var x = await bb.GetAvailableAmountAsync("BTCEUR");
-            var f = await bb.GetTradingTakerFeeRateAsync();
+            var f = await bb.GetAvailableAmountAsync("BTCEUR");
             Console.WriteLine($"{f}");
 
 
@@ -57,17 +56,20 @@ namespace Trader
 
             Console.WriteLine($"{fa}");
 
-            //   "BTC-EUR","buy",0.0005,35450
-            // var ocx = new OrderCandidate()
-            // {
-            //     Amount = 0.0005, 
-            //     UnitAskPrice = 33100,
-            //     Pair = "BTCEUR",
-            //     BuyExchange = "BitBay",
-            //     SellExchange = "Bitflyer"
-            // };
+           //   "BTC-EUR","buy",0.0005,35450
+            var ocx = new OrderCandidate()
+            {
+                Amount = 0.0005, 
+                UnitAskPrice = 32342,
+                Pair = "BTCEUR",
+                BuyExchange = "BitPanda",
+                SellExchange = "BitBay",
+                
+            };
 
-            // await _processor.ProcessOrderAsync(ocx);
+            await _processor.ProcessOrderAsync(ocx);
+
+
 
             //var x = await (bb as BitBayLogic).NewLimitOrderAsync("BTC-EUR","buy",0.0005,35450);
 

@@ -147,8 +147,8 @@ namespace Trader.Migrations
                     b.Property<double?>("SellNetPrice")
                         .HasColumnType("double precision");
 
-                    b.Property<long?>("SellOrderId")
-                        .HasColumnType("bigint");
+                    b.Property<string>("SellOrderId")
+                        .HasColumnType("text");
 
                     b.Property<double?>("SellOrginalAmount")
                         .HasColumnType("double precision");

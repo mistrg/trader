@@ -170,7 +170,7 @@ namespace Trader.Coinmate
                 OrderBookSuccessCount++;
             return result;
         }
-        public async Task<Order> GetOrderByOrderIdAsync(long orderId)
+        public async Task<Order> GetOrderByOrderIdAsync(string orderId)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
@@ -184,7 +184,7 @@ namespace Trader.Coinmate
                 new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
                 new KeyValuePair<string, string>("nonce", nonce.ToString()),
                 new KeyValuePair<string, string>("signature", hashHMACHex),
-                new KeyValuePair<string, string>("orderId", orderId.ToString()),
+                new KeyValuePair<string, string>("orderId", orderId),
 
             };
 
@@ -209,7 +209,7 @@ namespace Trader.Coinmate
 
         }
 
-        public async Task<TradeHistoryResponse> GetTradeHistoryAsync(long? orderId)
+        public async Task<TradeHistoryResponse> GetTradeHistoryAsync(string? orderId)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
@@ -452,7 +452,7 @@ namespace Trader.Coinmate
             {
                 try
                 {
-                    response = GetOrderByOrderIdAsync(buyResponse.data.Value).Result;
+                    response = GetOrderByOrderIdAsync(result.OrderId).Result;
                     result.Status = response.status;
                     result.Timestamp = response.timestamp;
 
@@ -554,7 +554,7 @@ namespace Trader.Coinmate
             //Check the fees
             try
             {
-                var th = await GetTradeHistoryAsync(long.Parse(result.OrderId));
+                var th = await GetTradeHistoryAsync(result.OrderId);
                 if (th != null && th.data != null && th.data.Count > 0)
                 {
                     result.CummulativeFee = th.data.Sum(p => p.price != 0 ? p.fee / p.price : 0);
@@ -680,7 +680,7 @@ namespace Trader.Coinmate
             }
 
             _presenter.ShowInfo($"Waiting for sell confirmation");
-            result.OrderId = sellResponse.data.Value;
+            result.OrderId = sellResponse.data.Value.ToString();
 
             Order response = null;
 

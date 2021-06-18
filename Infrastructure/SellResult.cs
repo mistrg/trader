@@ -5,7 +5,7 @@ namespace Trader.Infrastructure
     {
 
         public long Timestamp { get; set; }
-        public long OrderId { get; set; }
+        public string OrderId { get; set; }
         public string Comment { get; set; }
         public string Status { get; set; }
         public double? OriginalAmount { get; set; }

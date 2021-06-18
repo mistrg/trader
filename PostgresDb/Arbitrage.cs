@@ -81,7 +81,7 @@ namespace Trader.PostgresDb
         [MaxLengthAttribute(50)]
         public string SellStatus { get; set; }
 
-        public long? SellOrderId { get; set; }
+        public string SellOrderId { get; set; }
 
 
 

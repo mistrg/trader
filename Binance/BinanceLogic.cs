@@ -229,7 +229,7 @@ namespace Trader.Binance
             {
                 sellResponse = await SellMarketAsync(orderCandidate.Pair, orderCandidate.Amount, orderCandidate.Id);
                 result.Status = sellResponse.status;
-                result.OrderId = sellResponse.orderId;
+                result.OrderId = sellResponse.orderId.ToString();
                 result.OriginalAmount = sellResponse.origQtyNum;
                 result.RemainingAmount = sellResponse.origQtyNum - sellResponse.executedQtyNum;
                 result.CummulativeFee = sellResponse.CummulativeFee ?? 0;

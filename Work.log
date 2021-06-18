@@ -32,7 +32,10 @@ Work Log
 15.5.2021 Implementing Buy and Sell functionality on Bitbay
 17.5.2021 Implementing and testing Buy functionality on Bitbay
 19.5.2021 Implementing and testing Buy functionality on Bitbay, Change database to use orderId as string, Store keys more securely
+16.6.2021 Implementing buying logic for BitPanda
+17.6.2021 Further improvements on Bitpanda Implementation
 
+check if buy and sell are using string.Format("{0:0.##############}", amount)
 
 Why are some properties on arbitrage not set
 Dont use Price on BuyResult (it may not be real)
