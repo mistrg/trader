@@ -42,12 +42,14 @@ namespace Trader
             services.RegisterAllTypes<IExchangeLogic>(new[] { typeof(Program).Assembly });
 
 
+            var cs = new KeyVaultCache().GetCachedSecret("ProstgresConnectionString");
+
             services.AddEntityFrameworkNpgsql().AddDbContext<PostgresContext>(opt =>
-           opt.UseNpgsql(Config.PostgresConnectionString));
+           opt.UseNpgsql(cs));
 
 
             services.AddEntityFrameworkNpgsql().AddDbContext<ObserverContext>(opt =>
-           opt.UseNpgsql(Config.PostgresConnectionString));
+           opt.UseNpgsql(cs));
             // required to run the application
             services.AddTransient<App>();
 

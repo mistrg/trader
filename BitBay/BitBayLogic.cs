@@ -474,7 +474,7 @@ namespace Trader.BitBay
 
         }
 
-        private async Task<OfferResponse> ExecuteNewOrderAsync(string currencyPair, string mode, string offerType, double amount, double? rate = null)
+        private async Task<OfferResponse> ExecuteNewOrderAsync(string currencyPair, string offerType, string mode, double amount, double? rate = null)
         {
             var publicApiKey = _keyVaultCache.GetCachedSecret("BitBayApiKey");
             var privateApiKey = _keyVaultCache.GetCachedSecret("BitBayApiSecret");

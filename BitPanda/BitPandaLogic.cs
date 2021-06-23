@@ -158,7 +158,6 @@ namespace Trader.BitPanda
                 var response = await httpClient.GetAsync(baseUrl + urlPath);
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine(await response.Content.ReadAsStringAsync());
 
                     using (var stream = await response.Content.ReadAsStreamAsync())
                     {

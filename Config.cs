@@ -3,10 +3,6 @@ public static class Config
     public static int Version { get { return 25; } }
     public static string RunId { get; set; }
 
-    public static string PostgresConnectionString { get { return "Server = drbalek.cz; Port = 5432; Database = Drbor; User Id = drborbot; Password = G3ed9lPii3; "; } }
-
-
-
     public static bool AutomatedTrading { get { return false; } }
     public static double AutomatedTradingMinEstimatedProfitNetRate { get { return 0.49; } }
 

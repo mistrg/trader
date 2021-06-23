@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Trader.Infrastructure;
 
 namespace Trader.PostgresDb
 {
@@ -18,6 +19,9 @@ namespace Trader.PostgresDb
 
         public DbSet<ExchangeRuntimeInfo> ExchangeRuntimeInfo {get;set;}
 
+
+        
+
         public ObserverContext()
         {
         }
@@ -30,7 +34,9 @@ namespace Trader.PostgresDb
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql(Config.PostgresConnectionString);
+            var cs = new KeyVaultCache().GetCachedSecret("ProstgresConnectionString");
+            
+            optionsBuilder.UseNpgsql(cs);
         }
 
 

@@ -25,7 +25,7 @@ namespace Trader
 
         private readonly ObserverContext _ocontext;
         private readonly KeyVaultCache _keyVaultCache;
-        public App(IConfiguration config,KeyVaultCache keyVaultCache, Estimator estimator, ObserverContext ocontext, Observer observer, Processor processor, PostgresContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
+        public App(IConfiguration config, KeyVaultCache keyVaultCache, Estimator estimator, ObserverContext ocontext, Observer observer, Processor processor, PostgresContext context, IEnumerable<IExchangeLogic> exchangeLogics, Presenter presenter)
         {
             _config = config;
             _processor = processor;
@@ -42,36 +42,38 @@ namespace Trader
         {
             Console.ResetColor();
             _ocontext.NewBotrun();
+            _presenter.ShowInfo($"Trader version {Config.Version} starting runId: {Config.RunId}!");
+
 
             var bp = _exchangeLogics.Single(p => p.GetType() == typeof(BitPanda.BitPandaLogic));
             var x = await bp.GetAvailableAmountAsync("BTCEUR");
 
-            Console.WriteLine($"{x}");
+            Console.WriteLine($"BitPanda: {x.Item1} BTC, {x.Item2} Euro");
 
 
-             var bb = _exchangeLogics.Single(p => p.GetType() == typeof(BitBay.BitBayLogic));
+            var bb = _exchangeLogics.Single(p => p.GetType() == typeof(BitBay.BitBayLogic));
             var y = await bb.GetAvailableAmountAsync("BTCEUR");
 
-            Console.WriteLine($"{y}");
-
-        //    //   "BTC-EUR","buy",0.0005,35450
-        //     var ocx = new OrderCandidate()
-        //     {
-        //         Amount = 0.0005, 
-        //         UnitAskPrice = 32342,
-        //         Pair = "BTCEUR",
-        //         BuyExchange = "BitPanda",
-        //         SellExchange = "BitBay",
-                
-        //     };
-
-        //     await _processor.ProcessOrderAsync(ocx);
+            Console.WriteLine($"BitBay: {y.Item1} BTC, {y.Item2} Euro");
 
 
+            //    //   "BTC-EUR","buy",0.0005,35450
+            //     var ocx = new OrderCandidate()
+            //     {
+            //         Amount = 0.0005, 
+            //         UnitAskPrice = 32342,
+            //         Pair = "BTCEUR",
+            //         BuyExchange = "BitPanda",
+            //         SellExchange = "BitBay",
 
-            _presenter.ShowInfo($"Trader version {Config.Version} starting runId: {Config.RunId}!");
+            //     };
 
-           
+            //     await _processor.ProcessOrderAsync(ocx);
+
+
+
+
+
 
             // var dbt = new Task(async () =>
             //                       {
@@ -82,13 +84,13 @@ namespace Trader
 
             while (true)
             {
-                
-                 var bob = await bb.GetOrderBookAsync();
-                 var cob = await bp.GetOrderBookAsync();
 
-                 var db = bob.Union(cob);
+                var bob = await bb.GetOrderBookAsync();
+                var cob = await bp.GetOrderBookAsync();
 
-                 var oc = _estimator.Run(db);
+                var db = bob.Union(cob);
+
+                var oc = _estimator.Run(db);
 
                 if (oc != null)
                 {

@@ -12,7 +12,6 @@ namespace Trader.PostgresDb
 
         public PostgresContext()
         {
-
         }
         public PostgresContext(DbContextOptions<PostgresContext> options)
   : base(options)
@@ -22,7 +21,9 @@ namespace Trader.PostgresDb
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql(Config.PostgresConnectionString);
+            var cs = new KeyVaultCache().GetCachedSecret("ProstgresConnectionString");
+            
+            optionsBuilder.UseNpgsql(cs);
         }
         public DbSet<Arbitrage> Arbitrages { get; set; }
 
