@@ -102,6 +102,7 @@ namespace Trader.BitPanda
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine(ex);
                 }
 
 

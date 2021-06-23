@@ -210,7 +210,7 @@ namespace Trader.Coinmate
 
         }
 
-        public async Task<TradeHistoryResponse> GetTradeHistoryAsync(string? orderId)
+        public async Task<TradeHistoryResponse> GetTradeHistoryAsync(string orderId)
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
