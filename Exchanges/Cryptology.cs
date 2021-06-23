@@ -74,7 +74,9 @@ namespace Trader.Exchanges
 
         public async Task<double> GetTradingTakerFeeRateAsync()
         {
-            return 0.0020;
+            
+             return await Task.FromResult(0.002);
+
         }
 
         public Task<Tuple<double?, double?>> GetAvailableAmountAsync(string currencyPair)

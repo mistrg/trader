@@ -77,7 +77,8 @@ namespace Trader.Exchanges
 
         public async Task<double> GetTradingTakerFeeRateAsync()
         {
-            return 0.0025;
+             return await Task.FromResult(0.0025);
+
 
         }
 

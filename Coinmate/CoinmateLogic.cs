@@ -792,7 +792,9 @@ namespace Trader.Coinmate
 
         public async Task<double> GetTradingTakerFeeRateAsync()
         {
-            return 0.0023;
+            
+             return await Task.FromResult(0.0023);
+
         }
 
         private async Task<BuyResponse> BuyInstant(string currencyPair, double amountToPayInSecondCurrency)
