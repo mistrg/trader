@@ -77,19 +77,21 @@ namespace Trader.Exchanges
             throw new Exception();
         }
 
-        public Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
-        {
-            throw new Exception();
-        }
 
-        public Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate)
-        {
-            throw new Exception();
-        }
 
         public Task PrintAccountInformationAsync()
         {
             throw new System.Exception();
+        }
+
+        public Task<bool> BuyLimitOrderAsync(Arbitrage arbitrage)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> SellMarketAsync(Arbitrage orderCandidate)
+        {
+            throw new NotImplementedException();
         }
     }
 }

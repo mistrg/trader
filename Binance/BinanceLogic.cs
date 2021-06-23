@@ -39,7 +39,8 @@ namespace Trader.Binance
             var content = new FormUrlEncodedContent(pairs);
             var urlEncodedString = await content.ReadAsStringAsync();
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            //string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            string hashHMACHex = "";
 
 
             pairs.Add(new KeyValuePair<string, string>("signature", hashHMACHex));
@@ -49,7 +50,7 @@ namespace Trader.Binance
             var url = baseUri + "account?" + await finalContent.ReadAsStringAsync();
 
             httpClient.DefaultRequestHeaders.Clear();
-            httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+            //httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Config.BinanceApiKey);
             var result = await httpClient.GetAsync(url);
 
 
@@ -103,7 +104,8 @@ namespace Trader.Binance
             var content = new FormUrlEncodedContent(pairs);
             var urlEncodedString = await content.ReadAsStringAsync();
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            //string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            string hashHMACHex = "";
 
 
             pairs.Add(new KeyValuePair<string, string>("signature", hashHMACHex));
@@ -113,7 +115,7 @@ namespace Trader.Binance
             var url = $"{baseUri}myTrades?" + await finalContent.ReadAsStringAsync();
 
             httpClient.DefaultRequestHeaders.Clear();
-            httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+           // httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Config.BinanceApiKey);
             var result = await httpClient.GetAsync(url);
 
 
@@ -147,7 +149,8 @@ namespace Trader.Binance
             var content = new FormUrlEncodedContent(pairs);
             var urlEncodedString = await content.ReadAsStringAsync();
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            //string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            string hashHMACHex = "";
 
 
             pairs.Add(new KeyValuePair<string, string>("signature", hashHMACHex));
@@ -157,7 +160,7 @@ namespace Trader.Binance
             var url = $"{baseUri}allOrders?" + await finalContent.ReadAsStringAsync();
 
             httpClient.DefaultRequestHeaders.Clear();
-            httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+           // httpClient.DefaultRequestHeaders.Add("X-MBX-APIKEY", Config.BinanceApiKey);
             var result = await httpClient.GetAsync(url);
 
 
@@ -289,7 +292,8 @@ namespace Trader.Binance
             var content = new FormUrlEncodedContent(pairs);
             var urlEncodedString = await content.ReadAsStringAsync();
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            //string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            string hashHMACHex = "";
 
 
 
@@ -300,7 +304,7 @@ namespace Trader.Binance
 
 
 
-            finalContent.Headers.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+            //finalContent.Headers.Add("X-MBX-APIKEY", Config.BinanceApiKey);
 
             var result = await httpClient.PostAsync(baseUri + "order", finalContent);
 
@@ -363,7 +367,6 @@ namespace Trader.Binance
                 result.CummulativeFee = buyResponse.CummulativeFee ?? 0;
                 result.CummulativeFeeQuote = buyResponse.CummulativeFeeQuote ?? 0;
                 result.CummulativeQuoteQty = buyResponse.cummulativeQuoteQtyNum;
-                result.Price = buyResponse.priceNum;
                 result.Timestamp = buyResponse.transactTime;
             }
             catch (System.Exception ex)
@@ -427,7 +430,8 @@ namespace Trader.Binance
             var content = new FormUrlEncodedContent(pairs);
             var urlEncodedString = await content.ReadAsStringAsync();
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            //string hashHMACHex = Cryptography.HashHMACHex(Config.BinanceSecretKey, urlEncodedString);
+            string hashHMACHex = "";
 
 
 
@@ -438,7 +442,7 @@ namespace Trader.Binance
 
 
 
-            finalContent.Headers.Add("X-MBX-APIKEY", Config.BinanceApiKey);
+            //finalContent.Headers.Add("X-MBX-APIKEY", Config.BinanceApiKey);
 
             var result = await httpClient.PostAsync(baseUri + "order", finalContent);
 
@@ -509,5 +513,14 @@ namespace Trader.Binance
 
         }
 
+        public Task<bool> BuyLimitOrderAsync(Arbitrage arbitrage)
+        {
+            throw new System.Exception();
+        }
+
+        public Task<bool> SellMarketAsync(Arbitrage orderCandidate)
+        {
+            throw new System.Exception();
+        }
     }
 }

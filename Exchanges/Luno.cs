@@ -107,5 +107,40 @@ namespace Trader.Exchanges
         {
             throw new System.Exception();
         }
+
+        Task IExchangeLogic.SaveTelemetryAsync()
+        {
+            throw new System.Exception();
+        }
+
+        Task<double> IExchangeLogic.GetTradingTakerFeeRateAsync()
+        {
+            throw new System.Exception();
+        }
+
+        Task<Tuple<double?, double?>> IExchangeLogic.GetAvailableAmountAsync(string currencyPair)
+        {
+            throw new System.Exception();
+        }
+
+        Task<bool> IExchangeLogic.BuyLimitOrderAsync(Arbitrage arbitrage)
+        {
+            throw new System.Exception();
+        }
+
+        Task<bool> IExchangeLogic.SellMarketAsync(Arbitrage orderCandidate)
+        {
+            throw new System.Exception();
+        }
+
+        Task<List<DBItem>> IExchangeLogic.GetOrderBookAsync()
+        {
+            throw new System.Exception();
+        }
+
+        Task IExchangeLogic.PrintAccountInformationAsync()
+        {
+            throw new System.Exception();
+        }
     }
 }

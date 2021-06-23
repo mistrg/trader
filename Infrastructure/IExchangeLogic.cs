@@ -11,8 +11,8 @@ public interface IExchangeLogic
     Task<double> GetTradingTakerFeeRateAsync();
     
     Task<Tuple<double?, double?>> GetAvailableAmountAsync(string currencyPair);
-    Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate);
-    Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate);
+    Task<bool> BuyLimitOrderAsync(Arbitrage arbitrage);
+    Task<bool> SellMarketAsync(Arbitrage orderCandidate);
 
     Task<List<DBItem>> GetOrderBookAsync();
 

@@ -65,19 +65,19 @@ namespace Trader.Coinmate
 
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+            // var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+            // string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
 
-            var pairs = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
+            // var pairs = new List<KeyValuePair<string, string>>
+            // {
+            //     new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+            //     new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+            //     new KeyValuePair<string, string>("nonce", nonce.ToString()),
+            //     new KeyValuePair<string, string>("signature", hashHMACHex),
 
-            };
-
+            // };
+            var pairs = new List<KeyValuePair<string, string>>();
             var content = new FormUrlEncodedContent(pairs);
 
             Throtle();
@@ -174,19 +174,20 @@ namespace Trader.Coinmate
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+            // var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+            // string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
 
-            var pairs = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
-                new KeyValuePair<string, string>("orderId", orderId),
+            // var pairs = new List<KeyValuePair<string, string>>
+            // {
+            //     new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+            //     new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+            //     new KeyValuePair<string, string>("nonce", nonce.ToString()),
+            //     new KeyValuePair<string, string>("signature", hashHMACHex),
+            //     new KeyValuePair<string, string>("orderId", orderId),
 
-            };
+            // };
+            var pairs = new List<KeyValuePair<string, string>>();
 
             var content = new FormUrlEncodedContent(pairs);
 
@@ -213,18 +214,19 @@ namespace Trader.Coinmate
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+            // var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+            // string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
 
-            var pairs = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
+            // var pairs = new List<KeyValuePair<string, string>>
+            // {
+            //     new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+            //     new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+            //     new KeyValuePair<string, string>("nonce", nonce.ToString()),
+            //     new KeyValuePair<string, string>("signature", hashHMACHex),
 
-            };
+            // };
+            var pairs = new List<KeyValuePair<string, string>>();
 
             if (orderId != null)
                 pairs.Add(new KeyValuePair<string, string>("orderId", orderId.ToString()));
@@ -262,18 +264,19 @@ namespace Trader.Coinmate
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+            // var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+            // string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
 
-            var pairs = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
+            // var pairs = new List<KeyValuePair<string, string>>
+            // {
+            //     new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+            //     new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+            //     new KeyValuePair<string, string>("nonce", nonce.ToString()),
+            //     new KeyValuePair<string, string>("signature", hashHMACHex),
 
-            };
+            // };
+            var pairs = new List<KeyValuePair<string, string>>();
 
             if (orderId != null)
                 pairs.Add(new KeyValuePair<string, string>("orderId", orderId.ToString()));
@@ -310,19 +313,20 @@ namespace Trader.Coinmate
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+            // var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+            // string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
 
-            var pairs = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
-                new KeyValuePair<string, string>("currencyPair", currencyPair),
+            // var pairs = new List<KeyValuePair<string, string>>
+            // {
+            //     new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+            //     new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+            //     new KeyValuePair<string, string>("nonce", nonce.ToString()),
+            //     new KeyValuePair<string, string>("signature", hashHMACHex),
+            //     new KeyValuePair<string, string>("currencyPair", currencyPair),
 
-            };
+            // };
+            var pairs = new List<KeyValuePair<string, string>>();
 
             var content = new FormUrlEncodedContent(pairs);
 
@@ -348,18 +352,20 @@ namespace Trader.Coinmate
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+            // var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+            // string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
 
-            var pairs = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
-                new KeyValuePair<string, string>("orderId", orderId.ToString()),
-            };
+            // var pairs = new List<KeyValuePair<string, string>>
+            // {
+            //     new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+            //     new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+            //     new KeyValuePair<string, string>("nonce", nonce.ToString()),
+            //     new KeyValuePair<string, string>("signature", hashHMACHex),
+            //     new KeyValuePair<string, string>("orderId", orderId.ToString()),
+            // };
+
+            var pairs = new List<KeyValuePair<string, string>>();
 
             var content = new FormUrlEncodedContent(pairs);
             Throtle();
@@ -460,7 +466,6 @@ namespace Trader.Coinmate
 
                     result.OriginalAmount = response.originalAmount;
                     result.RemainingAmount = response.remainingAmount;
-                    result.Price = response.price ?? 0;
                 }
                 catch (Exception ex)
                 {
@@ -579,23 +584,25 @@ namespace Trader.Coinmate
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+            // var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+            // string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
 
-            var pairs = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
-                new KeyValuePair<string, string>("amount", string.Format("{0:0.##############}", amount)),
-                new KeyValuePair<string, string>("price", string.Format("{0:0.##############}", price)),
-                new KeyValuePair<string, string>("currencyPair", currencyPair),
-                new KeyValuePair<string, string>("immediateOrCancel", 1.ToString()),
-                new KeyValuePair<string, string>("clientOrderId", clientOrderId.ToString()),
+            // var pairs = new List<KeyValuePair<string, string>>
+            // {
+            //     new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+            //     new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+            //     new KeyValuePair<string, string>("nonce", nonce.ToString()),
+            //     new KeyValuePair<string, string>("signature", hashHMACHex),
+            //     new KeyValuePair<string, string>("amount", string.Format("{0:0.##############}", amount)),
+            //     new KeyValuePair<string, string>("price", string.Format("{0:0.##############}", price)),
+            //     new KeyValuePair<string, string>("currencyPair", currencyPair),
+            //     new KeyValuePair<string, string>("immediateOrCancel", 1.ToString()),
+            //     new KeyValuePair<string, string>("clientOrderId", clientOrderId.ToString()),
 
-            };
+            // };
+
+            var pairs = new List<KeyValuePair<string, string>>();
 
             var content = new FormUrlEncodedContent(pairs);
             Throtle();
@@ -748,22 +755,23 @@ namespace Trader.Coinmate
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+            // var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+            // string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
 
-            var pairs = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
+            // var pairs = new List<KeyValuePair<string, string>>
+            // {
+            //     new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+            //     new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+            //     new KeyValuePair<string, string>("nonce", nonce.ToString()),
+            //     new KeyValuePair<string, string>("signature", hashHMACHex),
 
-                new KeyValuePair<string, string>("amount", string.Format("{0:0.##############}", amount)),
-                new KeyValuePair<string, string>("currencyPair", currencyPair),
-                new KeyValuePair<string, string>("clientOrderId", clientOrderId.ToString()),
+            //     new KeyValuePair<string, string>("amount", string.Format("{0:0.##############}", amount)),
+            //     new KeyValuePair<string, string>("currencyPair", currencyPair),
+            //     new KeyValuePair<string, string>("clientOrderId", clientOrderId.ToString()),
 
-            };
+            // };
+            var pairs = new List<KeyValuePair<string, string>>();
 
             var content = new FormUrlEncodedContent(pairs);
 
@@ -791,19 +799,20 @@ namespace Trader.Coinmate
         {
             var nonce = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-            var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
+            // var signatureInput = nonce + Config.CoinmateClientId + Config.CoinmatePublicKey;
 
-            string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
+            // string hashHMACHex = Cryptography.HashHMACHex(Config.CoinmatePrivateKey, signatureInput);
 
-            var pairs = new List<KeyValuePair<string, string>>
-            {
-                new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
-                new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
-                new KeyValuePair<string, string>("nonce", nonce.ToString()),
-                new KeyValuePair<string, string>("signature", hashHMACHex),
-                new KeyValuePair<string, string>("total", string.Format("{0:0.##############}", amountToPayInSecondCurrency)),
-                new KeyValuePair<string, string>("currencyPair", currencyPair)
-            };
+            // var pairs = new List<KeyValuePair<string, string>>
+            // {
+            //     new KeyValuePair<string, string>("clientId", Config.CoinmateClientId),
+            //     new KeyValuePair<string, string>("publicKey", Config.CoinmatePublicKey),
+            //     new KeyValuePair<string, string>("nonce", nonce.ToString()),
+            //     new KeyValuePair<string, string>("signature", hashHMACHex),
+            //     new KeyValuePair<string, string>("total", string.Format("{0:0.##############}", amountToPayInSecondCurrency)),
+            //     new KeyValuePair<string, string>("currencyPair", currencyPair)
+            // };
+            var pairs = new List<KeyValuePair<string, string>>();
 
             var content = new FormUrlEncodedContent(pairs);
 
@@ -822,7 +831,15 @@ namespace Trader.Coinmate
 
         }
 
+        public Task<bool> BuyLimitOrderAsync(Arbitrage arbitrage)
+        {
+            throw new System.Exception();
+        }
 
+        public Task<bool> SellMarketAsync(Arbitrage orderCandidate)
+        {
+            throw new System.Exception();
+        }
     }
 
 

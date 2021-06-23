@@ -43,59 +43,11 @@ namespace Trader.PostgresDb
                 EstSellFee = orderCandidate.EstSellFee,
                 Ocid = orderCandidate.Id,
                 Pair = orderCandidate.Pair, 
+                BuyOrginalAmount = orderCandidate.Amount,
+                BuyUnitPrice = orderCandidate.TotalAskPrice
             };
             return arbitrage;
 
         }
-
-        internal void EnrichBuy(Arbitrage arbitrage, BuyResult result)
-        {
-            if (result != null && arbitrage != null)
-            {
-                arbitrage.BuyWhenCreated = Helper.UnixTimeStampToDateTime(result.Timestamp);
-                arbitrage.BuyOrderId = result.OrderId;
-                arbitrage.BuyComment = result.Comment;
-                arbitrage.BuyStatus = result.Status;
-                arbitrage.BuyOrginalAmount = result.OriginalAmount;
-                arbitrage.BuyRemainingAmount = result.RemainingAmount;
-                arbitrage.BuyCummulativeFee = result.CummulativeFee;
-                arbitrage.BuyCummulativeFeeQuote = result.CummulativeFeeQuote;
-                arbitrage.BuyCummulativeQuoteQty = result.CummulativeQuoteQty;
-                arbitrage.BuyUnitPrice = result.Price;
-
-                arbitrage.BuyNetPrice = (arbitrage.BuyCummulativeQuoteQty ?? 0) - (arbitrage.BuyCummulativeFeeQuote ?? 0);
-            }
-
-
-        }
-
-        internal void EnrichSell(Arbitrage arbitrage, SellResult result)
-        {
-            if (result != null && arbitrage != null)
-            {
-
-                arbitrage.SellWhenCreated = Helper.UnixTimeStampToDateTime(result.Timestamp);
-                arbitrage.SellOrderId = result.OrderId;
-                arbitrage.SellComment = result.Comment;
-                arbitrage.SellStatus = result.Status;
-                arbitrage.SellOrginalAmount = result.OriginalAmount;
-                arbitrage.SellRemainingAmount = result.RemainingAmount;
-                arbitrage.SellCummulativeFee = result.CummulativeFee;
-                arbitrage.SellCummulativeFeeQuote = result.CummulativeFeeQuote;
-                arbitrage.SellCummulativeQuoteQty = result.CummulativeQuoteQty;
-
-
-                arbitrage.SellNetPrice = (arbitrage.SellCummulativeQuoteQty ?? 0) - (arbitrage.SellCummulativeFeeQuote ?? 0);
-
-                arbitrage.RealProfitNet = (arbitrage.SellCummulativeQuoteQty ?? 0) - (arbitrage.BuyCummulativeQuoteQty ?? 0) - (arbitrage.SellCummulativeFeeQuote ?? 0) - (arbitrage.BuyCummulativeFeeQuote ?? 0);
-
-                arbitrage.RealProfitNetRate = arbitrage.SellNetPrice > 0 ? Math.Round(100 * (arbitrage.RealProfitNet ?? 0) / arbitrage.SellNetPrice.Value, 2) : 0;
-
-
-
-            }
-        }
-
-     
     }
 }

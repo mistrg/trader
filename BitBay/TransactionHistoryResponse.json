@@ -1,0 +1,73 @@
+{
+    "status": "Ok",
+    "totalRows": "4",
+    "items": [
+        {
+            "id": "4ffcdef9-b887-11eb-8513-0242ac110010",
+            "market": "BTC-EUR",
+            "time": "1621417686700",
+            "amount": "0.0002",
+            "rate": "33091.82",
+            "initializedBy": "Buy",
+            "wasTaker": true,
+            "userAction": "Buy",
+            "offerId": "4ffcdef6-b887-11eb-8513-0242ac110010",
+            "commissionValue": "0.00000086"
+        },
+        {
+            "id": "4ffcdef8-b887-11eb-8513-0242ac110010",
+            "market": "BTC-EUR",
+            "time": "1621417686700",
+            "amount": "0.0003",
+            "rate": "33034.95",
+            "initializedBy": "Buy",
+            "wasTaker": true,
+            "userAction": "Buy",
+            "offerId": "4ffcdef6-b887-11eb-8513-0242ac110010",
+            "commissionValue": "0.00000129"
+        },
+        {
+            "id": "67091a8c-b73d-11eb-8513-0242ac110010",
+            "market": "BTC-EUR",
+            "time": "1621275991447",
+            "amount": "0.00049785",
+            "rate": "35500.01",
+            "initializedBy": "Sell",
+            "wasTaker": true,
+            "userAction": "Sell",
+            "offerId": "67091a8a-b73d-11eb-8513-0242ac110010",
+            "commissionValue": "0.08"
+        },
+        {
+            "id": "55a59b43-b738-11eb-8513-0242ac110010",
+            "market": "BTC-EUR",
+            "time": "1621273814790",
+            "amount": "0.0005",
+            "rate": "35402.49",
+            "initializedBy": "Buy",
+            "wasTaker": true,
+            "userAction": "Buy",
+            "offerId": "55a59b41-b738-11eb-8513-0242ac110010",
+            "commissionValue": "0.00000215"
+        }
+    ],
+    "query": {
+        "markets": [
+            [
+                "BTCEUR"
+            ]
+        ],
+        "limit": [],
+        "offset": [],
+        "fromTime": [],
+        "toTime": [],
+        "userId": [],
+        "offerId": [],
+        "initializedBy": [],
+        "rateFrom": [],
+        "rateTo": [],
+        "userAction": [],
+        "nextPageCursor": []
+    },
+    "nextPageCursor": null
+}

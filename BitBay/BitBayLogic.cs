@@ -38,9 +38,6 @@ namespace Trader.BitBay
         const string pair = "BTC-EUR";
 
 
-
-
-
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
             OrderBookTotalCount++;
@@ -61,7 +58,7 @@ namespace Trader.BitBay
                         using (var stream = await response.Content.ReadAsStreamAsync())
                         {
                             var res = await JsonSerializer.DeserializeAsync<OrderBookResponse>(stream);
-                            var fee  = await GetTradingTakerFeeRateAsync();
+                            var fee = await GetTradingTakerFeeRateAsync();
                             foreach (var item in res.buy)
                                 result.Add(new DBItem() { TakerFeeRate = fee, Exch = nameof(BitBay), Pair = upair, amount = double.Parse(item.ca), askPrice = double.Parse(item.ra) });
                             foreach (var item in res.sell)
@@ -103,7 +100,7 @@ namespace Trader.BitBay
                     httpClient.DefaultRequestHeaders.Add("operation-id", Guid.NewGuid().ToString());
                     httpClient.DefaultRequestHeaders.Add("Request-Timestamp", nonce.ToString());
 
-                    var response = await httpClient.GetAsync(baseUrl + "trading/config/"+pair);
+                    var response = await httpClient.GetAsync(baseUrl + "trading/config/" + pair);
                     if (response.IsSuccessStatusCode)
                     {
 
@@ -217,7 +214,7 @@ namespace Trader.BitBay
                     return new Tuple<bool, BuyResult>(false, result);
                 }
                 buyTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                buyResponse = await NewLimitOrderAsync(pair, "buy", orderCandidate.Amount, orderCandidate.UnitAskPrice);
+                buyResponse = await ExecuteNewOrderAsync(pair, "buy", "limit", orderCandidate.Amount, orderCandidate.UnitAskPrice);
 
             }
             catch (System.Exception ex)
@@ -259,14 +256,13 @@ namespace Trader.BitBay
             result.Status = buyResponse.status;
             result.OriginalAmount = orderCandidate.Amount;
             result.RemainingAmount = orderCandidate.Amount - buyResponse.CompletedAmount;
-            result.Price = orderCandidate.UnitAskPrice;
             result.Timestamp = buyTime.Value;
 
             try
             {
                 var response = GetTransactionsHistoryAsync(offerId: result.OrderId).Result;
 
-                result.CummulativeFee = response.CummulativeFee;
+              //  result.CummulativeFee = response.CummulativeFee;
 
             }
             catch (Exception ex)
@@ -286,9 +282,108 @@ namespace Trader.BitBay
 
         }
 
-        public Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate)
+        public async Task<bool> SellMarketAsync(Arbitrage arbitrage)
         {
-            throw new Exception();
+
+
+            if (!Config.ProcessTrades)
+            {
+                var comment = "SellMarketAsync skipped. ProcessTrades is not activated";
+                _presenter.ShowPanic(comment);
+                arbitrage.SellComment = comment;
+
+                return false;
+            }
+            _presenter.ShowInfo($"Let's sell");
+
+
+            OfferResponse sellResponse = null;
+            try
+            {
+                var pair = GetLongPair(arbitrage.Pair);
+                if (!Pairs.Any(p => p == pair))
+                {
+                    var comment = "Unsupported currency pair. Process cancel...";
+                    _presenter.ShowPanic(comment);
+
+                    arbitrage.SellComment = comment;
+
+                    return false;
+                }
+                sellResponse = await ExecuteNewOrderAsync(pair, "sell", "market", arbitrage.SellOrginalAmount.Value);
+
+            }
+            catch (System.Exception ex)
+            {
+                var comment = $"SellMarketAsync failed. {ex}. Process cancel...";
+
+                _presenter.ShowPanic(comment);
+                arbitrage.SellComment = comment;
+                return false;
+            }
+
+            if (sellResponse == null)
+            {
+                var comment = $"SellMarketAsync is empty. Process cancel...";
+                _presenter.ShowPanic(comment);
+                arbitrage.SellComment = comment;
+                return false;
+            }
+
+            if (sellResponse.errors != null && sellResponse.errors.Count > 0)
+            {
+
+                var comment = $"SellMarketAsync failed. {sellResponse.errors.Concat(new string[] { "," })}. Process cancel...";
+                _presenter.ShowPanic(comment);
+                arbitrage.SellComment = comment;
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(sellResponse.offerId))
+            {
+                var comment = $"SellMarketAsync failed. Order not complete. Process cancel...";
+                _presenter.ShowPanic(comment);
+                arbitrage.SellComment = comment;
+                return false;
+            }
+
+            _presenter.ShowInfo($"Waiting for sell confirmation");
+            arbitrage.SellOrderId = sellResponse.offerId;
+            arbitrage.SellStatus = sellResponse.status;
+            arbitrage.SellRemainingAmount = arbitrage.SellOrginalAmount - sellResponse.CompletedAmount;
+
+
+
+            try
+            {
+                var response = GetTransactionsHistoryAsync(offerId: arbitrage.SellOrderId).Result;
+
+                arbitrage.SellCummulativeFeeQuote = response.items[0].commissionValueNum;
+                arbitrage.SellWhenCreated = Helper.UnixTimeStampToDateTime(response.items[0].timeNum);
+                arbitrage.SellCummulativeQuoteQty = response.items[0].amountNum * response.items[0].rateNum;
+
+            }
+            catch (Exception ex)
+            {
+                _presenter.ShowPanic($"GetOrderByOrderIdAsync failed. {ex} Retrying...");
+                return false;
+            }
+
+
+
+
+            arbitrage.SellNetPrice = (arbitrage.SellCummulativeQuoteQty ?? 0) - (arbitrage.SellCummulativeFeeQuote ?? 0);
+
+            arbitrage.RealProfitNet = arbitrage.SellNetPrice - (arbitrage.BuyCummulativeQuoteQty ?? 0);
+
+            arbitrage.RealProfitNetRate = arbitrage.SellNetPrice > 0 ? Math.Round(100 * (arbitrage.RealProfitNet ?? 0) / arbitrage.SellNetPrice.Value, 2) : 0;
+
+
+
+            _presenter.ShowInfo($"Sell successful");
+
+            
+            return true;
         }
 
         public async Task<ActiveOrderResponse> GetActiveOrdersAsync(string currencyPair)
@@ -379,7 +474,7 @@ namespace Trader.BitBay
 
         }
 
-        public async Task<OfferResponse> NewLimitOrderAsync(string currencyPair, string offerType, double amount, double rate)
+        private async Task<OfferResponse> ExecuteNewOrderAsync(string currencyPair, string mode, string offerType, double amount, double? rate = null)
         {
             var publicApiKey = _keyVaultCache.GetCachedSecret("BitBayApiKey");
             var privateApiKey = _keyVaultCache.GetCachedSecret("BitBayApiSecret");
@@ -387,7 +482,7 @@ namespace Trader.BitBay
             request.amount = amount;
             request.rate = rate;
             request.offerType = offerType; //buy / sell
-            request.mode = "limit";
+            request.mode = mode; //limit / market
             request.immediateOrCancel = true;
 
             var json = JsonSerializer.Serialize<OfferRequest>(request);
@@ -429,5 +524,11 @@ namespace Trader.BitBay
         {
             throw new System.Exception();
         }
+
+        public Task<bool> BuyLimitOrderAsync(Arbitrage arbitrage)
+        {
+            throw new System.Exception();
+        }
+
     }
 }

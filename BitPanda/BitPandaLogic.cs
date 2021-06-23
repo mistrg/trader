@@ -30,9 +30,6 @@ namespace Trader.BitPanda
             Pairs = new List<string>() { pair };
         }
 
-
-
-
         public async Task<List<DBItem>> GetOrderBookAsync()
         {
             OrderBookTotalCount++;
@@ -115,8 +112,6 @@ namespace Trader.BitPanda
             return TradingFee;
 
         }
-
-
 
         public async Task<CloseOrderByOrderIdResponse> CloseOrderByOrderIdAsync(string orderId)
         {
@@ -217,41 +212,33 @@ namespace Trader.BitPanda
 
 
         }
-
-        public async Task<Tuple<bool, BuyResult>> BuyLimitOrderAsync(OrderCandidate orderCandidate)
+        public async Task<bool> BuyLimitOrderAsync(Arbitrage arbitrage)
         {
-            var result = new BuyResult();
-            result.OriginalAmount = orderCandidate.Amount;
-            result.Price = orderCandidate.UnitAskPrice;
-
             if (!Config.ProcessTrades)
             {
                 var comment = "BuyLimitOrderAsync skipped. ProcessTrades is not activated";
                 _presenter.Warning(comment);
-                result.Comment = comment;
+                arbitrage.BuyComment = comment;
 
-                return new Tuple<bool, BuyResult>(true, result);
+                return false;
             }
             _presenter.ShowInfo($"Let's buy");
 
-            _presenter.PrintOrderCandidate(orderCandidate);
 
             CreateOrderResponse buyResponse = null;
-            long? buyTime;
             try
             {
-                var pair = GetLongPair(orderCandidate.Pair);
+                var pair = GetLongPair(arbitrage.Pair);
                 if (!Pairs.Any(p => p == pair))
                 {
                     var comment = "Unsupported currency pair. Process cancel...";
                     _presenter.ShowError(comment);
 
-                    result.Comment = comment;
+                    arbitrage.BuyComment = comment;
 
-                    return new Tuple<bool, BuyResult>(false, result);
+                    return false;
                 }
-                buyTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
-                buyResponse = await NewLimitOrderAsync(pair, "buy", orderCandidate.Amount, orderCandidate.UnitAskPrice, orderCandidate.Id.ToString());
+                buyResponse = await NewLimitOrderAsync(pair, "buy", arbitrage.BuyOrginalAmount.Value, arbitrage.BuyUnitPrice.Value);
 
             }
             catch (System.Exception ex)
@@ -259,16 +246,16 @@ namespace Trader.BitPanda
                 var comment = $"Buylimit failed. {ex}. Process cancel...";
 
                 _presenter.ShowPanic(comment);
-                result.Comment = comment;
-                return new Tuple<bool, BuyResult>(false, result);
+                arbitrage.BuyComment = comment;
+                 return false;
             }
 
             if (buyResponse == null)
             {
                 var comment = $"Buyresponse is empty. Process cancel...";
                 _presenter.ShowError(comment);
-                result.Comment = comment;
-                return new Tuple<bool, BuyResult>(false, result);
+                arbitrage.BuyComment = comment;
+                 return false;
             }
 
             if (!string.IsNullOrWhiteSpace(buyResponse.error))
@@ -276,22 +263,22 @@ namespace Trader.BitPanda
 
                 var comment = $"Buylimit failed. {buyResponse.error}. Process cancel...";
                 _presenter.ShowError(comment);
-                result.Comment = comment;
-                return new Tuple<bool, BuyResult>(false, result);
+                arbitrage.BuyComment = comment;
+                 return false;
             }
 
             if (string.IsNullOrWhiteSpace(buyResponse.order_id))
             {
                 var comment = $"Buylimit failed. Order not complete. Process cancel...";
                 _presenter.ShowPanic(comment);
-                result.Comment = comment;
-                return new Tuple<bool, BuyResult>(false, result);
+                arbitrage.BuyComment = comment;
+                 return false;
             }
 
 
             _presenter.ShowInfo($"Waiting for buy confirmation");
-            result.OrderId = buyResponse.order_id;
-            result.Timestamp = buyTime.Value;
+            arbitrage.BuyOrderId = buyResponse.order_id;
+            arbitrage.BuyWhenCreated= buyResponse.time;
 
             OrderResponse response = null;
 
@@ -302,18 +289,13 @@ namespace Trader.BitPanda
                     response = GetOrderByOrderIdAsync(buyResponse.order_id).Result;
                     if (response?.order != null)
                     {
-                        result.Status = response.order.status;
+                        arbitrage.BuyStatus = response.order.status;
 
-                        result.OriginalAmount = response.order.amountNum;
-                        result.RemainingAmount = response.order.amountNum - response.order.filled_amountNum;
-                        result.Price = response.order.priceNum;
-
-
-                        result.CummulativeFee = response.trades.Select(p => p.fee).Where(p => p.fee_currency == "BTC").Sum(p => p.fee_amountNum);
-
-
-
-
+                        arbitrage.BuyOrginalAmount = response.order.amountNum;
+                        arbitrage.BuyRemainingAmount  = response.order.amountNum - response.order.filled_amountNum;
+                        arbitrage.BuyCummulativeFee = response.trades.Select(p => p.fee).Sum(p => p.fee_amountNum);
+                        arbitrage.BuyCummulativeFeeQuote = response.trades.Sum(p => p.fee_QuoteAmountNum);
+                        arbitrage.BuyCummulativeQuoteQty = response.trades.Sum(p => p.quoteAmountNum);
                     }
                 }
                 catch (Exception ex)
@@ -325,16 +307,16 @@ namespace Trader.BitPanda
 
             }, TimeSpan.FromMilliseconds(Config.BuyTimeoutInMs));
 
-            var buySuccess = result.Status != null && (result.Status == "FILLED_FULLY" || result.Status == "FILLED" || result.Status == "CLOSED");
+            var buySuccess = arbitrage.BuyStatus != null && (arbitrage.BuyStatus == "FILLED_FULLY" || arbitrage.BuyStatus == "FILLED" || arbitrage.BuyStatus == "CLOSED");
             if (!buySuccess)
             {
-                _presenter.ShowInfo($"Buylimit order was sent but could not be confirmed in time. Current state is {result?.Status} Trying to cancel the order.");
+                _presenter.ShowInfo($"Buylimit order was sent but could not be confirmed in time. Current state is {arbitrage?.BuyStatus} Trying to cancel the order.");
 
                 //OPENED state
                 CloseOrderByOrderIdResponse buyCancelResult = null;
                 try
                 {
-                    buyCancelResult = await CloseOrderByOrderIdAsync(result.OrderId);
+                    buyCancelResult = await CloseOrderByOrderIdAsync(arbitrage.BuyOrderId);
                 }
                 catch (System.Exception ex)
                 {
@@ -346,41 +328,46 @@ namespace Trader.BitPanda
                     var comment = "Order was cancelled successfully.Process cancel...";
                     _presenter.ShowInfo(comment);
 
-                    result.Comment = comment;
-                    return new Tuple<bool, BuyResult>(false, result);
+                    arbitrage.BuyComment = comment;
+                     return false;
                 }
                 else
                 {
                     var comment = $"CancelOrderAsync  exited with wrong errorcode. Assuming the trade was finished." + buyCancelResult?.error;
                     _presenter.ShowPanic(comment);
-                    result.Comment = comment;
-                    return new Tuple<bool, BuyResult>(false, result);
+                    arbitrage.BuyComment = comment;
+                     return false;
                 }
             }
-            orderCandidate.Amount = orderCandidate.Amount - result.RemainingAmount.Value - result.CummulativeFee;
+            arbitrage.SellOrginalAmount = arbitrage.BuyOrginalAmount.Value - arbitrage.BuyRemainingAmount.Value - arbitrage.BuyCummulativeFee;
 
-            var shouldSell = orderCandidate.Amount > 0.005;
-            var mes = $"Buy state " + result.Status + " should sell " + shouldSell;
-            _presenter.ShowInfo(mes);
-            result.Comment = mes;
+            var shouldSell = arbitrage.SellOrginalAmount > 0.00055;
+            
+            var mes = $"Buy state " + arbitrage.BuyStatus;
 
+            if (shouldSell)
+            {
+                _presenter.ShowInfo(mes);
 
-            return new Tuple<bool, BuyResult>(shouldSell, result);
+            }
+            else
+            {
+                mes += " Opened BTC position on BitPanda. Please solve manualy";
+                _presenter.ShowPanic(mes);
+            }
+
+            arbitrage.BuyComment = mes;
+
+            return shouldSell;
         }
-
-
-
         public Task<Tuple<bool, SellResult>> SellMarketAsync(OrderCandidate orderCandidate)
         {
             throw new Exception();
         }
-
         public Task PrintAccountInformationAsync()
         {
             throw new System.Exception();
         }
-
-
         private string GetLongPair(string shortPair)
         {
             if (shortPair.Length == 6)
@@ -389,8 +376,7 @@ namespace Trader.BitPanda
             }
             return shortPair;
         }
-
-        private async Task<CreateOrderResponse> NewLimitOrderAsync(string currencyPair, string offerType, double amount, double unitPrice, string ocid)
+        private async Task<CreateOrderResponse> NewLimitOrderAsync(string currencyPair, string offerType, double amount, double unitPrice)
         {
             var privateApiKey = _keyVaultCache.GetCachedSecret(nameof(BitPanda) + "ApiSecret");
 
@@ -400,7 +386,6 @@ namespace Trader.BitPanda
             var request = new CreateOrderRequest();
             request.amount = string.Format("{0:0.##############}", amount);
             request.time_in_force = "IMMEDIATE_OR_CANCELLED";
-            //request.client_id = ocid;
             request.type = "LIMIT";
             request.instrument_code = currencyPair;
             request.side = offerType; //buy / sell
@@ -414,7 +399,7 @@ namespace Trader.BitPanda
 
             if (!result.IsSuccessStatusCode)
             {
-                _presenter.ShowPanic($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
+                _presenter.ShowError($"Error HTTP: {result.StatusCode} {result.ReasonPhrase}");
             }
 
 
@@ -426,6 +411,11 @@ namespace Trader.BitPanda
                 return res;
             }
 
+        }
+
+        public Task<bool> SellMarketAsync(Arbitrage orderCandidate)
+        {
+            throw new System.Exception();
         }
     }
 }

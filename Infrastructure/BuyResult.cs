@@ -13,7 +13,6 @@ namespace Trader.Infrastructure
         public double? RemainingAmount { get; set; }
         public double CummulativeFee { get; set; }
         public double CummulativeQuoteQty { get; set; }
-        public double Price { get; set; }
         public double CummulativeFeeQuote { get; set; }
     }
 }

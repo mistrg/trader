@@ -91,5 +91,15 @@ namespace Trader.Exchanges
         {
             throw new System.Exception();
         }
+
+        public Task<bool> BuyLimitOrderAsync(Arbitrage arbitrage)
+        {
+            throw new System.Exception();
+        }
+
+        public Task<bool> SellMarketAsync(Arbitrage orderCandidate)
+        {
+            throw new System.Exception();
+        }
     }
 }

@@ -57,7 +57,6 @@ namespace Trader.PostgresDb
         public double? BuyCummulativeFee { get; set; }
         public double? BuyCummulativeFeeQuote { get; set; }
 
-        public double? BuyNetPrice { get; set; }
 
 
 
