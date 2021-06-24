@@ -81,7 +81,7 @@ namespace Trader.BitBay
         public async Task<double> GetTradingTakerFeeRateAsync()
         {
             //return 0.0043;
-            if (WhenTradingFeeLastCheck == null || WhenTradingFeeLastCheck < DateTime.Now.AddDays(1))
+            if (WhenTradingFeeLastCheck == null || WhenTradingFeeLastCheck < DateTime.Now.AddDays(-1))
             {
                 try
                 {

@@ -135,10 +135,6 @@ namespace Trader.Exchanges
             throw new System.Exception();
         }
 
-        Task<List<DBItem>> IExchangeLogic.GetOrderBookAsync()
-        {
-            throw new System.Exception();
-        }
 
         Task IExchangeLogic.PrintAccountInformationAsync()
         {

@@ -118,58 +118,6 @@ namespace Trader
 
             Console.ResetColor();
         }
-
-        public void ShowBuyResult(Tuple<bool, BuyResult> buyResult)
-        {
-            var result = buyResult.Item2;
-            var message = "";
-            if (result != null)
-            {
-                try
-                {
-                    PropertyInfo[] properties = typeof(BuyResult).GetProperties();
-                    foreach (PropertyInfo property in properties)
-                    {
-                        message += $"{property.Name}: {property.GetValue(result)} ";
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    _logger.Error(ex.ToString());
-                }
-            }
-
-            if (buyResult.Item1)
-                ShowSuccess($"Buy successful! {message}");
-            else
-                ShowError($"Buy failed! {message}");
-        }
-
-
-        public void ShowSellResult(Tuple<bool, SellResult> sellResult)
-        {
-            var result = sellResult.Item2;
-            var message = "";
-            if (result != null)
-            {
-                try
-                {
-                    PropertyInfo[] properties = typeof(SellResult).GetProperties();
-                    foreach (PropertyInfo property in properties)
-                    {
-                        message += $"{property.Name}: {property.GetValue(result)} ";
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    _logger.Error(ex.ToString());
-                }
-            }
-
-            if (sellResult.Item1)
-                ShowSuccess($"Sell successful! {message}");
-            else
-                ShowError($"Sell failed! {message}");
-        }
     }
+       
 }

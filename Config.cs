@@ -4,7 +4,7 @@ public static class Config
     public static string RunId { get; set; }
 
     public static bool AutomatedTrading { get { return false; } }
-    public static double AutomatedTradingMinEstimatedProfitNetRate { get { return 0.49; } }
+    public static double AutomatedTradingMinEstimatedProfitNetRate { get { return 1.5; } }
 
 
 

@@ -70,8 +70,7 @@ namespace Trader.BitPanda
 
         public async Task<double> GetTradingTakerFeeRateAsync()
         {
-            //return 0.0015;
-            if (WhenTradingFeeLastCheck == null || WhenTradingFeeLastCheck < DateTime.Now.AddDays(1))
+            if (WhenTradingFeeLastCheck == null || WhenTradingFeeLastCheck < DateTime.Now.AddDays(-1))
             {
                 try
                 {
@@ -87,13 +86,14 @@ namespace Trader.BitPanda
                     var response = await httpClient.GetAsync(baseUrl + urlPath);
                     if (response.IsSuccessStatusCode)
                     {
-                        Console.WriteLine(await response.Content.ReadAsStringAsync());
+                        
                         using (var stream = await response.Content.ReadAsStreamAsync())
                         {
                             var res = await JsonSerializer.DeserializeAsync<TradingFeeResponse>(stream);
                             WhenTradingFeeLastCheck = DateTime.Now;
 
-                            TradingFee = double.Parse(res.active_fee_tier.taker_fee);
+                            TradingFee = double.Parse(res.active_fee_tier.taker_fee)/100;
+                            
 
                         }
 
@@ -102,7 +102,7 @@ namespace Trader.BitPanda
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    _presenter.ShowError(ex.ToString());
                 }
 
 
@@ -130,7 +130,6 @@ namespace Trader.BitPanda
 
             if (response.IsSuccessStatusCode)
             {
-                Console.WriteLine(await response.Content.ReadAsStringAsync());
 
                 using (var stream = await response.Content.ReadAsStreamAsync())
                 {

@@ -47,68 +47,62 @@ namespace Trader
 
             var bp = _exchangeLogics.Single(p => p.GetType() == typeof(BitPanda.BitPandaLogic));
             var x = await bp.GetAvailableAmountAsync("BTCEUR");
+            var f = await bp.GetTradingTakerFeeRateAsync();
 
-            Console.WriteLine($"BitPanda: {x.Item1} BTC, {x.Item2} Euro");
+            _presenter.ShowInfo($"BitPanda: {x.Item1} BTC, {x.Item2} Euro, Fee: {f}");
 
 
             var bb = _exchangeLogics.Single(p => p.GetType() == typeof(BitBay.BitBayLogic));
             var y = await bb.GetAvailableAmountAsync("BTCEUR");
+            var fe = await bb.GetTradingTakerFeeRateAsync();
 
-            Console.WriteLine($"BitBay: {y.Item1} BTC, {y.Item2} Euro");
+            _presenter.ShowInfo($"BitBay: {y.Item1} BTC, {y.Item2} Euro, Fee: {fe}");
 
-
-            //    //   "BTC-EUR","buy",0.0005,35450
-            //     var ocx = new OrderCandidate()
-            //     {
-            //         Amount = 0.0005, 
-            //         UnitAskPrice = 32342,
-            //         Pair = "BTCEUR",
-            //         BuyExchange = "BitPanda",
-            //         SellExchange = "BitBay",
-
-            //     };
-
-            //     await _processor.ProcessOrderAsync(ocx);
-
-
-
-
-
-
-            // var dbt = new Task(async () =>
-            //                       {
-            //                           await _observer.RunAsync();
-            //                       });
-            // dbt.Start();
+            var dbt = new Task(async () =>
+                                  {
+                                      await _observer.RunAsync();
+                                  });
+            dbt.Start();
 
 
             while (true)
             {
-
-                var bob = await bb.GetOrderBookAsync();
-                var cob = await bp.GetOrderBookAsync();
-
-                var db = bob.Union(cob);
-
-                var oc = _estimator.Run(db);
-
-                if (oc != null)
-                {
-                    _presenter.PrintOrderCandidate(oc);
-
-
-                    var processOrder = Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate;
-                    if (processOrder)
-                        await _processor.ProcessOrderAsync(oc);
-
-
-                    if (Config.PauseAfterArbitrage)
-                    {
-                        Console.WriteLine("Press any key to continue...");
-                        Console.ReadKey();
-                    }
-                }
+                Thread.Sleep(10 * 1000);
             }
+
+            //     var bob = await bb.GetOrderBookAsync();
+            //     var cob = await bp.GetOrderBookAsync();
+
+            //     var db = bob.Union(cob);
+
+            //     var oc = _estimator.Run(db);
+
+            //     if (oc != null)
+            //     {
+
+            //         var isDuplicate = await _ocontext.CreateOrSkipOrderCandidateAsync(oc);
+            //         if (!isDuplicate)
+            //         {
+
+            //             _presenter.PrintOrderCandidate(oc);
+
+
+
+            //             var processOrder = Config.AutomatedTrading && oc.EstProfitNetRate > Config.AutomatedTradingMinEstimatedProfitNetRate;
+            //             if (processOrder)
+            //             {
+            //                 await _processor.ProcessOrderAsync(oc);
+
+
+            //                 if (Config.PauseAfterArbitrage)
+            //                 {
+            //                     _presenter.ShowInfo("Press any key to continue...");
+            //                     //Console.ReadKey();
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
         }
     }
 }

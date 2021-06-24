@@ -36,12 +36,15 @@ Work Log
 17.6.2021 Further improvements on Bitpanda Implementation
 22.6.2021 Reviewing solution for BitPanda and Bitbay
 23.6.2021 Process almost ready, update database,connection string has to be hidden, backup database everday,check if buy and sell are using string.Format("{0:0.##############}", amount)
+24.6.2021 fix email sending
 
-
+!make order books much smaller
 !check that minimum amount is handeled properly
 !is order candidate saved before or after or not at all into the database when creting order candidate
+!save bot run exact config to the database
+
+Nice to have:
 !Estimator should return multiple candidates that should be evaluated
-!fix email sending
 !stop bot on sell failure
 
 

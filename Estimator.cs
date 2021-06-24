@@ -23,8 +23,8 @@ namespace Trader
 
 
 
-                    if (minimalAmount <= 0.0002)
-                        continue; //Too small for coinmate
+                    if (minimalAmount <= 0.0005)
+                        continue; //Too small ~13,92 Euro
 
 
                     if (sellEntry.bidPrice.Value * minimalAmount <= 11) // Price more then 11 Euros
